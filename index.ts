@@ -164,20 +164,6 @@ export default function (pi: ExtensionAPI) {
 			maxTokens: 256000,
 		},
 		{
-			id: "accounts/fireworks/routers/kimi-k2p5-turbo",
-			name: "Kimi K2.5 Turbo",
-			reasoning: true,
-			input: ["text","image","video"],
-			cost: {
-				input: 0.6,
-				output: 3,
-				cacheRead: 0.1,
-				cacheWrite: 0,
-			},
-			contextWindow: 256000,
-			maxTokens: 256000,
-		},
-		{
 			id: "accounts/fireworks/models/kimi-k2-thinking",
 			name: "Kimi K2 Thinking",
 			reasoning: true,
