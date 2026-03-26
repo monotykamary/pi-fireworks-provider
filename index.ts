@@ -24,6 +24,20 @@ export default function (pi: ExtensionAPI) {
 
 		models: [
 		{
+			id: "accounts/fireworks/routers/kimi-k2p5-turbo",
+			name: "Kimi K2.5 Turbo",
+			reasoning: true,
+			input: ["text","image"],
+			cost: {
+				input: 0,
+				output: 0,
+				cacheRead: 0,
+				cacheWrite: 0,
+			},
+			contextWindow: 256000,
+			maxTokens: 256000,
+		},
+		{
 			id: "accounts/fireworks/models/kimi-k2-instruct",
 			name: "Kimi K2 Instruct",
 			reasoning: false,
@@ -152,20 +166,6 @@ export default function (pi: ExtensionAPI) {
 		{
 			id: "accounts/fireworks/models/kimi-k2p5",
 			name: "Kimi K2.5",
-			reasoning: true,
-			input: ["text","image","video"],
-			cost: {
-				input: 0.6,
-				output: 3,
-				cacheRead: 0.1,
-				cacheWrite: 0,
-			},
-			contextWindow: 256000,
-			maxTokens: 256000,
-		},
-		{
-			id: "accounts/fireworks/routers/kimi-k2p5-turbo",
-			name: "Kimi K2.5 Turbo",
 			reasoning: true,
 			input: ["text","image","video"],
 			cost: {
