@@ -1,0 +1,254 @@
+[
+  {
+    "id": "accounts/fireworks/routers/kimi-k2p5-turbo",
+    "name": "Kimi K2.5 Turbo",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text", "image"]
+    },
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 256000,
+      "output": 256000
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/kimi-k2p5",
+    "name": "Kimi K2.5",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text", "image", "video"]
+    },
+    "cost": {
+      "input": 0.6,
+      "output": 3,
+      "cache_read": 0.1,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 256000,
+      "output": 256000
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/kimi-k2-thinking",
+    "name": "Kimi K2 Thinking",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 0.6,
+      "output": 2.5,
+      "cache_read": 0.3,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 256000,
+      "output": 256000
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/deepseek-v3p1",
+    "name": "DeepSeek V3.1",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 0.56,
+      "output": 1.68,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 163840,
+      "output": 163840
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/minimax-m2p1",
+    "name": "MiniMax-M2.1",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 0.3,
+      "output": 1.2,
+      "cache_read": 0.03,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 200000,
+      "output": 200000
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/minimax-m2p5",
+    "name": "MiniMax-M2.5",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 0.3,
+      "output": 1.2,
+      "cache_read": 0.03,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 196608,
+      "output": 196608
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/gpt-oss-120b",
+    "name": "GPT OSS 120B",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 0.15,
+      "output": 0.6,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 131072,
+      "output": 32768
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/glm-4p7",
+    "name": "GLM 4.7",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 0.6,
+      "output": 2.2,
+      "cache_read": 0.3,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 198000,
+      "output": 198000
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/deepseek-v3p2",
+    "name": "DeepSeek V3.2",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 0.56,
+      "output": 1.68,
+      "cache_read": 0.28,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 160000,
+      "output": 160000
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/glm-4p5",
+    "name": "GLM 4.5",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 0.55,
+      "output": 2.19,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 131072,
+      "output": 131072
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/glm-5",
+    "name": "GLM 5",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 1,
+      "output": 3.2,
+      "cache_read": 0.5,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 202752,
+      "output": 131072
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/glm-4p5-air",
+    "name": "GLM 4.5 Air",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 0.22,
+      "output": 0.88,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 131072,
+      "output": 131072
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/gpt-oss-20b",
+    "name": "GPT OSS 20B",
+    "reasoning": true,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 0.05,
+      "output": 0.2,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 131072,
+      "output": 32768
+    }
+  },
+  {
+    "id": "accounts/fireworks/models/kimi-k2-instruct",
+    "name": "Kimi K2 Instruct",
+    "reasoning": false,
+    "modalities": {
+      "input": ["text"]
+    },
+    "cost": {
+      "input": 1,
+      "output": 3,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 128000,
+      "output": 16384
+    }
+  }
+]

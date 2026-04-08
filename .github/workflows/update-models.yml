@@ -43,9 +43,10 @@ jobs:
           title: 'feat: update fireworks models from API'
           body: |
             Automated update of fireworks models from https://models.dev/api.json
-            
+
             Changes include:
-            - Updated model list in `index.ts`
+            - Updated regular models in `models.json`
             - Updated model table in `README.md`
+            - Custom models in `custom-models.json` are preserved
           branch: update-models
           delete-branch: true
