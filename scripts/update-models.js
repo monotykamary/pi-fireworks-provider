@@ -58,6 +58,18 @@ function saveModels(filePath, models) {
   console.log(`✓ Saved ${models.length} models to ${path.basename(filePath)}`);
 }
 
+// Find custom models that now exist in upstream (duplicates to remove)
+function findDuplicateCustomModels(upstreamModels, customModels) {
+  const upstreamIds = new Set(upstreamModels.map(m => m.id));
+  return customModels.filter(model => upstreamIds.has(model.id));
+}
+
+// Remove duplicate models from custom-models.json
+function removeDuplicateCustomModels(customModels, duplicates) {
+  const duplicateIds = new Set(duplicates.map(m => m.id));
+  return customModels.filter(model => !duplicateIds.has(model.id));
+}
+
 // Merge upstream and custom models (custom takes precedence on ID conflict)
 function mergeModels(upstreamModels, customModels) {
   const modelMap = new Map();
@@ -160,6 +172,23 @@ async function main() {
 
     // Load existing custom models
     const customModels = loadModels(CUSTOM_MODELS_PATH);
+
+    // Find and remove duplicates from custom-models.json
+    const duplicates = findDuplicateCustomModels(upstreamModels, customModels);
+    if (duplicates.length > 0) {
+      console.log(`Found ${duplicates.length} custom model(s) now available upstream:`);
+      for (const dup of duplicates) {
+        console.log(`  - ${dup.id} (${dup.name})`);
+      }
+      
+      const cleanedCustomModels = removeDuplicateCustomModels(customModels, duplicates);
+      saveModels(CUSTOM_MODELS_PATH, cleanedCustomModels);
+      console.log(`✓ Removed ${duplicates.length} duplicate(s) from custom-models.json`);
+      
+      // Use cleaned list for further processing
+      customModels.length = 0;
+      customModels.push(...cleanedCustomModels);
+    }
 
     // Save upstream models to models.json (regular models)
     saveModels(MODELS_PATH, upstreamModels);

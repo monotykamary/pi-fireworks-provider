@@ -48,5 +48,6 @@ jobs:
             - Updated regular models in `models.json`
             - Updated model table in `README.md`
             - Custom models in `custom-models.json` are preserved
+            - Duplicate models (now available upstream) are automatically removed from `custom-models.json`
           branch: update-models
           delete-branch: true
