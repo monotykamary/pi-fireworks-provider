@@ -24,7 +24,8 @@
     "cost": {
       "input": 1.4,
       "output": 4.4,
-      "cache_read": 0.26
+      "cache_read": 0.26,
+      "cache_write": 0
     },
     "limit": {
       "context": 202800,
@@ -57,7 +58,8 @@
     "cost": {
       "input": 0.56,
       "output": 1.68,
-      "cache_read": 0.28
+      "cache_read": 0.28,
+      "cache_write": 0
     },
     "limit": {
       "context": 160000,
@@ -89,7 +91,8 @@
     "cost": {
       "input": 0.3,
       "output": 1.2,
-      "cache_read": 0.03
+      "cache_read": 0.03,
+      "cache_write": 0
     },
     "limit": {
       "context": 196608,
@@ -118,7 +121,9 @@
     "open_weights": true,
     "cost": {
       "input": 0.22,
-      "output": 0.88
+      "output": 0.88,
+      "cache_read": 0,
+      "cache_write": 0
     },
     "limit": {
       "context": 131072,
@@ -150,7 +155,8 @@
     "cost": {
       "input": 1,
       "output": 3.2,
-      "cache_read": 0.5
+      "cache_read": 0.5,
+      "cache_write": 0
     },
     "limit": {
       "context": 202752,
@@ -179,7 +185,9 @@
     "open_weights": true,
     "cost": {
       "input": 0.56,
-      "output": 1.68
+      "output": 1.68,
+      "cache_read": 0,
+      "cache_write": 0
     },
     "limit": {
       "context": 163840,
@@ -208,7 +216,9 @@
     "open_weights": true,
     "cost": {
       "input": 1,
-      "output": 3
+      "output": 3,
+      "cache_read": 0,
+      "cache_write": 0
     },
     "limit": {
       "context": 128000,
@@ -238,7 +248,8 @@
     "cost": {
       "input": 0.5,
       "output": 3,
-      "cache_read": 0.1
+      "cache_read": 0.1,
+      "cache_write": 0
     },
     "limit": {
       "context": 128000,
@@ -270,7 +281,8 @@
     "cost": {
       "input": 0.3,
       "output": 1.2,
-      "cache_read": 0.03
+      "cache_read": 0.03,
+      "cache_write": 0
     },
     "limit": {
       "context": 200000,
@@ -303,7 +315,8 @@
     "cost": {
       "input": 0.6,
       "output": 2.2,
-      "cache_read": 0.3
+      "cache_read": 0.3,
+      "cache_write": 0
     },
     "limit": {
       "context": 198000,
@@ -335,7 +348,9 @@
     "open_weights": true,
     "cost": {
       "input": 0.55,
-      "output": 2.19
+      "output": 2.19,
+      "cache_read": 0,
+      "cache_write": 0
     },
     "limit": {
       "context": 131072,
@@ -370,7 +385,8 @@
     "cost": {
       "input": 0.6,
       "output": 3,
-      "cache_read": 0.1
+      "cache_read": 0.1,
+      "cache_write": 0
     },
     "limit": {
       "context": 256000,
@@ -398,7 +414,9 @@
     "open_weights": true,
     "cost": {
       "input": 0.05,
-      "output": 0.2
+      "output": 0.2,
+      "cache_read": 0,
+      "cache_write": 0
     },
     "limit": {
       "context": 131072,
@@ -426,7 +444,9 @@
     "open_weights": true,
     "cost": {
       "input": 0.15,
-      "output": 0.6
+      "output": 0.6,
+      "cache_read": 0,
+      "cache_write": 0
     },
     "limit": {
       "context": 131072,
@@ -458,7 +478,8 @@
     "cost": {
       "input": 0.6,
       "output": 2.5,
-      "cache_read": 0.3
+      "cache_read": 0.3,
+      "cache_write": 0
     },
     "limit": {
       "context": 256000,
@@ -492,7 +513,8 @@
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0
+      "cache_read": 0,
+      "cache_write": 0
     },
     "limit": {
       "context": 256000,
