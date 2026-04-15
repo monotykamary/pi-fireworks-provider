@@ -56,16 +56,18 @@ interface PiModel {
 
 // Transform JSON model to Pi's expected format
 function transformModel(model: JsonModel): PiModel {
+  // Ensure all cost fields are present with defaults (0) to prevent NaN in cost calculations
+  const cost = model.cost ?? {};
   return {
     id: model.id,
     name: model.name,
     reasoning: model.reasoning,
     input: model.modalities.input,
     cost: {
-      input: model.cost.input,
-      output: model.cost.output,
-      cacheRead: model.cost.cache_read,
-      cacheWrite: model.cost.cache_write,
+      input: cost.input ?? 0,
+      output: cost.output ?? 0,
+      cacheRead: cost.cache_read ?? 0,
+      cacheWrite: cost.cache_write ?? 0,
     },
     contextWindow: model.limit.context ?? 0,
     maxTokens: model.limit.output ?? 0,

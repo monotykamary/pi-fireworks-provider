@@ -170,8 +170,28 @@ async function main() {
     const upstreamModels = Object.values(provider.models).filter(m => m.status !== 'deprecated');
     console.log(`Found ${upstreamModels.length} upstream models from API`);
 
+    // Normalize cost fields to ensure all fields are present (prevents NaN in pi cost calculations)
+    for (const model of upstreamModels) {
+      if (model.cost) {
+        model.cost.input = model.cost.input ?? 0;
+        model.cost.output = model.cost.output ?? 0;
+        model.cost.cache_read = model.cost.cache_read ?? 0;
+        model.cost.cache_write = model.cost.cache_write ?? 0;
+      }
+    }
+
     // Load existing custom models
     const customModels = loadModels(CUSTOM_MODELS_PATH);
+
+    // Normalize cost fields in custom models too
+    for (const model of customModels) {
+      if (model.cost) {
+        model.cost.input = model.cost.input ?? 0;
+        model.cost.output = model.cost.output ?? 0;
+        model.cost.cache_read = model.cost.cache_read ?? 0;
+        model.cost.cache_write = model.cost.cache_write ?? 0;
+      }
+    }
 
     // Find and remove duplicates from custom-models.json
     const duplicates = findDuplicateCustomModels(upstreamModels, customModels);
