@@ -9,15 +9,18 @@
  * Requires FIREWORKS_API_KEY environment variable.
  * Usage: FIREWORKS_API_KEY=your-key node scripts/update-models.js
  *
+ * Data flow:
+ *   models.json       → auto-generated from Fireworks API (model discovery)
+ *   patch.json        → manual overrides (pricing, reasoning, limits, etc.)
+ *   custom-models.json → hidden/router models not in the API
+ *
  * The API provides: id, displayName, contextLength, supportsImageInput,
  * supportsTools, supportsServerless, state, kind, moe, parameterCount, etc.
  *
  * It does NOT provide: pricing, max output tokens, reasoning mode, or
- * interleaved thinking details. Those are preserved from the existing
- * models.json (enriched data). New models from the API that aren't in
- * models.json get stub entries with reasonable defaults.
+ * interleaved thinking details. Those come from patch.json.
  *
- * Custom models are maintained separately in custom-models.json.
+ * Merge order for README: models.json → apply patch.json → merge custom-models.json
  */
 
 import https from 'https';
@@ -32,6 +35,7 @@ const FIREWORKS_API_BASE = 'https://api.fireworks.ai';
 const ACCOUNT_ID = 'fireworks';
 const MODELS_PATH = path.join(process.cwd(), 'models.json');
 const CUSTOM_MODELS_PATH = path.join(process.cwd(), 'custom-models.json');
+const PATCH_PATH = path.join(process.cwd(), 'patch.json');
 
 // ─── HTTP helpers ───────────────────────────────────────────────────────────
 
@@ -87,17 +91,18 @@ function loadJSON(filePath) {
     if (!fs.existsSync(filePath)) return [];
     const data = fs.readFileSync(filePath, 'utf8');
     const parsed = JSON.parse(data);
-    console.log(`✓ Loaded ${parsed.length} models from ${path.basename(filePath)}`);
+    console.log(`✓ Loaded ${Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length} entries from ${path.basename(filePath)}`);
     return parsed;
   } catch (e) {
     console.warn(`Warning: Could not load ${path.basename(filePath)}: ${e.message}`);
-    return [];
+    return {};
   }
 }
 
 function saveJSON(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n');
-  console.log(`✓ Saved ${data.length} models to ${path.basename(filePath)}`);
+  const count = Array.isArray(data) ? data.length : Object.keys(data).length;
+  console.log(`✓ Saved ${count} entries to ${path.basename(filePath)}`);
 }
 
 // ─── Model filtering & mapping ──────────────────────────────────────────────
@@ -130,7 +135,6 @@ function isRelevantModel(m, existingIds = new Set()) {
  */
 function buildDisplayName(m) {
   let name = m.displayName || m.name || '';
-  // If displayName is just the raw model id suffix, clean it up
   if (!name || name === m.name) {
     name = m.name.split('/').pop() || m.name;
   }
@@ -138,37 +142,11 @@ function buildDisplayName(m) {
 }
 
 /**
- * Determine the model "family" from the model id.
- * This is used for grouping in the README table.
- */
-function inferFamily(modelId) {
-  if (modelId.includes('kimi')) return 'kimi-thinking';
-  if (modelId.includes('deepseek')) return 'deepseek';
-  if (modelId.includes('glm')) return 'glm';
-  if (modelId.includes('minimax')) return 'minimax';
-  if (modelId.includes('gpt-oss')) return 'gpt-oss';
-  if (modelId.includes('qwen')) return 'qwen';
-  if (modelId.includes('gemma')) return 'gemma';
-  return 'other';
-}
-
-/**
- * Determine if a model likely supports reasoning (interleaved thinking).
- * This is a heuristic based on known model families. The API doesn't expose
- * this directly, so we rely on the enriched data from models.json.
- */
-function inferReasoning(modelId) {
-  // Most recent MoE models on Fireworks support reasoning via reasoning_content
-  const reasoningFamilies = ['kimi-k2', 'kimi-thinking', 'deepseek', 'glm', 'minimax', 'gpt-oss'];
-  const family = inferFamily(modelId);
-  return reasoningFamilies.includes(family);
-}
-
-/**
  * Convert a Fireworks API model to our models.json format.
- * Merges with existing enriched data if available.
+ * Only includes data the API provides — no pricing, reasoning, or output limits.
+ * Those come from patch.json.
  */
-function convertModel(apiModel, enriched = {}) {
+function convertModel(apiModel) {
   const id = apiModel.name;
   const name = buildDisplayName(apiModel);
   const input = ['text'];
@@ -176,32 +154,57 @@ function convertModel(apiModel, enriched = {}) {
 
   return {
     id,
-    name: enriched.name || name,
-    family: enriched.family || inferFamily(id),
-    attachment: enriched.attachment ?? false,
-    reasoning: enriched.reasoning ?? inferReasoning(id),
-    tool_call: enriched.tool_call ?? apiModel.supportsTools ?? false,
-    ...(enriched.interleaved ? { interleaved: enriched.interleaved } : {}),
-    temperature: enriched.temperature ?? true,
-    ...(enriched.knowledge ? { knowledge: enriched.knowledge } : {}),
-    ...(enriched.release_date ? { release_date: enriched.release_date } : {}),
-    ...(enriched.last_updated ? { last_updated: enriched.last_updated } : {}),
+    name,
     modalities: {
       input,
-      output: enriched.modalities?.output || ['text'],
+      output: ['text'],
     },
-    open_weights: enriched.open_weights ?? true,
     cost: {
-      input: enriched.cost?.input ?? 0,
-      output: enriched.cost?.output ?? 0,
-      cache_read: enriched.cost?.cache_read ?? 0,
-      cache_write: enriched.cost?.cache_write ?? 0,
+      input: 0,
+      output: 0,
+      cache_read: 0,
+      cache_write: 0,
     },
     limit: {
-      context: enriched.limit?.context || apiModel.contextLength || 0,
-      output: enriched.limit?.output ?? null,
+      context: apiModel.contextLength || 0,
+      output: null,
     },
   };
+}
+
+/**
+ * Deep merge a patch into a model. Nested objects (cost, limit, modalities)
+ * are merged field-by-field; scalar fields are replaced.
+ */
+function applyPatch(model, patch) {
+  const result = { ...model };
+
+  if (patch.name !== undefined) result.name = patch.name;
+  if (patch.family !== undefined) result.family = patch.family;
+  if (patch.reasoning !== undefined) result.reasoning = patch.reasoning;
+  if (patch.interleaved !== undefined) result.interleaved = patch.interleaved;
+
+  if (patch.modalities) {
+    result.modalities = { ...result.modalities, ...patch.modalities };
+  }
+
+  if (patch.cost) {
+    result.cost = {
+      input: patch.cost.input ?? result.cost?.input ?? 0,
+      output: patch.cost.output ?? result.cost?.output ?? 0,
+      cache_read: patch.cost.cache_read ?? result.cost?.cache_read ?? 0,
+      cache_write: patch.cost.cache_write ?? result.cost?.cache_write ?? 0,
+    };
+  }
+
+  if (patch.limit) {
+    result.limit = {
+      context: patch.limit.context ?? result.limit?.context ?? 0,
+      output: patch.limit.output ?? result.limit?.output ?? null,
+    };
+  }
+
+  return result;
 }
 
 // ─── README generation ──────────────────────────────────────────────────────
@@ -276,27 +279,22 @@ async function main() {
     const apiModels = await fetchAllFireworksModels(apiKey);
     console.log(`\nTotal models from API: ${apiModels.length}`);
 
-    // 2. Load existing enriched data from models.json
-    const existingModels = loadJSON(MODELS_PATH);
-    const enrichedMap = new Map(existingModels.map((m) => [m.id, m]));
+    // 2. Load existing models.json and patch.json
+    const existingModels = Array.isArray(loadJSON(MODELS_PATH)) ? loadJSON(MODELS_PATH) : [];
+    const patchData = loadJSON(PATCH_PATH);
     const existingIds = new Set(existingModels.map((m) => m.id));
 
     // 3. Filter to relevant LLMs (serverless + previously curated)
     const relevantApiModels = apiModels.filter((m) => isRelevantModel(m, existingIds));
     console.log(`Relevant LLM models: ${relevantApiModels.length}`);
 
-    // 4. Convert API models, merging with enriched data
-    const newModels = relevantApiModels
-      .map((apiModel) => {
-        const enriched = enrichedMap.get(apiModel.name) || {};
-        return convertModel(apiModel, enriched);
-      })
-      .filter(Boolean);
+    // 4. Convert API models to models.json format (no pricing — that comes from patch.json)
+    const newModels = relevantApiModels.map((apiModel) => convertModel(apiModel));
 
-    // Log new models (not in existing enriched data)
+    // Log new models (not in patch.json)
     for (const m of newModels) {
-      if (!enrichedMap.has(m.id)) {
-        console.log(`  🆕 New model: ${m.id} (${m.name}) — needs pricing/output limits`);
+      if (!patchData[m.id]) {
+        console.log(`  🆕 New model: ${m.id} (${m.name}) — add to patch.json for pricing/output limits`);
       }
     }
 
@@ -313,24 +311,14 @@ async function main() {
 
     const allUpstreamModels = [...newModels, ...preservedModels];
 
-    // 5. Save upstream models (API-discovered + preserved)
+    // 5. Save upstream models (API-derived, no pricing)
     saveJSON(MODELS_PATH, allUpstreamModels);
 
     // 6. Load and process custom models
-    const customModels = loadJSON(CUSTOM_MODELS_PATH);
-
-    // Normalize cost fields in custom models
-    for (const model of customModels) {
-      if (model.cost) {
-        model.cost.input = model.cost.input ?? 0;
-        model.cost.output = model.cost.output ?? 0;
-        model.cost.cache_read = model.cost.cache_read ?? 0;
-        model.cost.cache_write = model.cost.cache_write ?? 0;
-      }
-    }
+    const customModels = Array.isArray(loadJSON(CUSTOM_MODELS_PATH)) ? loadJSON(CUSTOM_MODELS_PATH) : [];
 
     // Find custom models that now appear in upstream (remove from custom)
-    const upstreamIds = new Set(newModels.map((m) => m.id));
+    const upstreamIds = new Set(allUpstreamModels.map((m) => m.id));
     const duplicates = customModels.filter((m) => upstreamIds.has(m.id));
     if (duplicates.length > 0) {
       console.log(`\nFound ${duplicates.length} custom model(s) now available upstream:`);
@@ -344,14 +332,30 @@ async function main() {
       customModels.push(...cleaned);
     }
 
-    // 7. Merge for README
+    // 7. Build merged models with patches applied (for README)
     const mergedMap = new Map();
-    for (const m of newModels) mergedMap.set(m.id, m);
-    for (const m of customModels) mergedMap.set(m.id, m);
+
+    // Start with upstream models
+    for (const m of allUpstreamModels) mergedMap.set(m.id, m);
+
+    // Apply patches (enrichment: pricing, reasoning, limits, etc.)
+    for (const [id, patch] of Object.entries(patchData)) {
+      const existing = mergedMap.get(id);
+      if (existing) {
+        mergedMap.set(id, applyPatch(existing, patch));
+      }
+    }
+
+    // Add/override with custom models, also applying their patches
+    for (const m of customModels) {
+      const patch = patchData[m.id];
+      mergedMap.set(m.id, patch ? applyPatch(m, patch) : m);
+    }
+
     const allModels = Array.from(mergedMap.values());
 
     console.log(
-      `\nTotal: ${allModels.length} models (${allUpstreamModels.length} upstream + ${customModels.length} custom)`
+      `\nTotal: ${allModels.length} models (${allUpstreamModels.length} upstream + ${customModels.length} custom, ${Object.keys(patchData).length} patches)`
     );
 
     // 8. Update README

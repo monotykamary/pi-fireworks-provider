@@ -1,0 +1,396 @@
+{
+  "accounts/fireworks/models/glm-5p1": {
+    "name": "GLM 5.1",
+    "family": "glm",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 1.4,
+      "output": 4.4,
+      "cache_read": 0.26,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 131072
+    }
+  },
+  "accounts/fireworks/models/deepseek-v3p2": {
+    "name": "DeepSeek V3.2",
+    "family": "deepseek",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.56,
+      "output": 1.68,
+      "cache_read": 0.28,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 160000
+    }
+  },
+  "accounts/fireworks/models/minimax-m2p5": {
+    "name": "MiniMax-M2.5",
+    "family": "minimax",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.3,
+      "output": 1.2,
+      "cache_read": 0.03,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 196608
+    }
+  },
+  "accounts/fireworks/models/glm-4p5-air": {
+    "name": "GLM 4.5 Air",
+    "family": "glm-air",
+    "reasoning": true,
+    "cost": {
+      "input": 0.22,
+      "output": 0.88,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 131072
+    }
+  },
+  "accounts/fireworks/models/glm-5": {
+    "name": "GLM 5",
+    "family": "glm",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 1,
+      "output": 3.2,
+      "cache_read": 0.5,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 131072
+    }
+  },
+  "accounts/fireworks/models/deepseek-v3p1": {
+    "name": "DeepSeek V3.1",
+    "family": "deepseek",
+    "reasoning": true,
+    "cost": {
+      "input": 0.56,
+      "output": 1.68,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 163840
+    }
+  },
+  "accounts/fireworks/models/kimi-k2-instruct": {
+    "name": "Kimi K2 Instruct",
+    "family": "kimi",
+    "reasoning": false,
+    "cost": {
+      "input": 1,
+      "output": 3,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 16384
+    }
+  },
+  "accounts/fireworks/models/qwen3p6-plus": {
+    "name": "Qwen 3.6 Plus",
+    "family": "qwen",
+    "reasoning": true,
+    "cost": {
+      "input": 0.5,
+      "output": 3,
+      "cache_read": 0.1,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 8192
+    },
+    "modalities": {
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  "accounts/fireworks/models/minimax-m2p1": {
+    "name": "MiniMax-M2.1",
+    "family": "minimax",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.3,
+      "output": 1.2,
+      "cache_read": 0.03,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 200000
+    }
+  },
+  "accounts/fireworks/models/minimax-m2p7": {
+    "name": "MiniMax-M2.7",
+    "family": "minimax",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.3,
+      "output": 1.2,
+      "cache_read": 0.03,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 196608
+    }
+  },
+  "accounts/fireworks/models/glm-4p7": {
+    "name": "GLM 4.7",
+    "family": "glm",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.6,
+      "output": 2.2,
+      "cache_read": 0.3,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 198000
+    }
+  },
+  "accounts/fireworks/models/glm-4p5": {
+    "name": "GLM 4.5",
+    "family": "glm",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.55,
+      "output": 2.19,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 131072
+    }
+  },
+  "accounts/fireworks/models/kimi-k2p5": {
+    "name": "Kimi K2.5",
+    "family": "kimi-thinking",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.6,
+      "output": 3,
+      "cache_read": 0.1,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 256000
+    },
+    "modalities": {
+      "input": [
+        "text",
+        "image",
+        "video"
+      ]
+    }
+  },
+  "accounts/fireworks/models/gpt-oss-20b": {
+    "name": "GPT OSS 20B",
+    "family": "gpt-oss",
+    "reasoning": true,
+    "cost": {
+      "input": 0.05,
+      "output": 0.2,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 32768
+    }
+  },
+  "accounts/fireworks/models/gpt-oss-120b": {
+    "name": "GPT OSS 120B",
+    "family": "gpt-oss",
+    "reasoning": true,
+    "cost": {
+      "input": 0.15,
+      "output": 0.6,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 32768
+    }
+  },
+  "accounts/fireworks/models/kimi-k2-thinking": {
+    "name": "Kimi K2 Thinking",
+    "family": "kimi-thinking",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.6,
+      "output": 2.5,
+      "cache_read": 0.3,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 256000
+    }
+  },
+  "accounts/fireworks/models/kimi-k2p6": {
+    "name": "Kimi K2.6",
+    "family": "kimi-thinking",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.95,
+      "output": 4,
+      "cache_read": 0.16,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 262144
+    }
+  },
+  "accounts/fireworks/routers/kimi-k2p5-turbo": {
+    "name": "Kimi K2.5 Turbo (router)",
+    "family": "kimi-thinking",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 256000
+    }
+  },
+  "accounts/fireworks/routers/kimi-k2p6": {
+    "name": "Kimi K2.6 (router)",
+    "family": "kimi-thinking",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 262144
+    },
+    "modalities": {
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
+  "accounts/fireworks/routers/glm-5p1-fast": {
+    "name": "GLM 5.1 Fast (router)",
+    "family": "glm",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 1.4,
+      "output": 4.4,
+      "cache_read": 0.26,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 131072
+    }
+  },
+  "accounts/fireworks/routers/minimax-m2p7": {
+    "name": "MiniMax M2.7 (router)",
+    "family": "minimax",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.3,
+      "output": 1.2,
+      "cache_read": 0.06,
+      "cache_write": 0
+    }
+  },
+  "accounts/fireworks/routers/glm-5-fast": {
+    "name": "GLM 5 Fast (router)",
+    "family": "glm",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 1,
+      "output": 3.2,
+      "cache_read": 0.5,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 131072
+    }
+  },
+  "accounts/fireworks/models/gemma-4-31b-it": {
+    "name": "Gemma 4 31B IT",
+    "family": "gemma",
+    "reasoning": true,
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_write": 0
+    }
+  },
+  "accounts/fireworks/models/gemma-4-26b-a4b-it": {
+    "name": "Gemma 4 26B A4B IT",
+    "family": "gemma",
+    "reasoning": true,
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_write": 0
+    }
+  }
+}

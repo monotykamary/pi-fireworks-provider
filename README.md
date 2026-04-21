@@ -4,7 +4,7 @@ A [pi](https://github.com/badlogic/pi-mono) extension that registers [Fireworks 
 
 ## Features
 
-- **22+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, and GPT-OSS
+- **28+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, and GPT-OSS
 - **Unified API** via Fireworks AI's OpenAI-compatible completions endpoint
 - **Cost Tracking** with per-model pricing for budget management
 - **Reasoning Models** support for advanced reasoning capabilities
@@ -48,25 +48,31 @@ pi
 
 | Model | Type | Context | Max Tokens | Input Cost | Output Cost |
 |-------|------|---------|------------|------------|-------------|
+| Llama 3.3 70B Instruct | Text | 131K | - | Free | Free |
+| Qwen3 8B | Text | 41K | - | Free | Free |
+| Qwen3 VL 30B A3B Instruct | Text + Image | 262K | - | Free | Free |
+| Qwen3 VL 30B A3B Thinking | Text + Image | 262K | - | Free | Free |
+| DeepSeek V3.1 | Text | 164K | 164K | $0.56 | $1.68 |
+| DeepSeek V3.2 | Text | 164K | 160K | $0.56 | $1.68 |
 | Gemma 4 26B A4B IT | Text + Image | 262K | - | Free | Free |
 | Gemma 4 31B IT | Text + Image | 262K | - | Free | Free |
-| GLM 5 Fast | Text | 203K | 131K | $1.00 | $3.20 |
-| GLM 5.1 Fast (firepass) | Text | 203K | 131K | $1.40 | $4.40 |
-| MiniMax M2.7 (firepass) | Text | 204K | - | $0.30 | $1.20 |
-| DeepSeek V3.1 | Text | 164K | 164K | $0.56 | $1.68 |
-| DeepSeek V3.2 | Text | 160K | 160K | $0.56 | $1.68 |
 | GLM 4.5 | Text | 131K | 131K | $0.55 | $2.19 |
-| GLM 4.7 | Text | 198K | 198K | $0.60 | $2.20 |
+| GLM 4.7 | Text | 203K | 198K | $0.60 | $2.20 |
 | GLM 5 | Text | 203K | 131K | $1.00 | $3.20 |
+| GLM 5 Fast (router) | Text | 203K | 131K | $1.00 | $3.20 |
 | GLM 5.1 | Text | 203K | 131K | $1.40 | $4.40 |
+| GLM 5.1 Fast (router) | Text | 203K | 131K | $1.40 | $4.40 |
 | GLM 4.5 Air | Text | 131K | 131K | $0.22 | $0.88 |
 | GPT OSS 120B | Text | 131K | 33K | $0.15 | $0.60 |
 | GPT OSS 20B | Text | 131K | 33K | $0.05 | $0.20 |
-| Kimi K2 Instruct | Text | 128K | 16K | $1.00 | $3.00 |
-| Kimi K2 Thinking | Text | 256K | 256K | $0.60 | $2.50 |
-| Kimi K2.5 | Text + Image | 256K | 256K | $0.60 | $3.00 |
-| Kimi K2.5 Turbo (firepass) | Text + Image | 256K | 256K | Free | Free |
-| MiniMax-M2.1 | Text | 200K | 200K | $0.30 | $1.20 |
+| Kimi K2 Instruct | Text | 131K | 16K | $1.00 | $3.00 |
+| Kimi K2 Thinking | Text | 262K | 256K | $0.60 | $2.50 |
+| Kimi K2.5 | Text + Image | 262K | 256K | $0.60 | $3.00 |
+| Kimi K2.5 Turbo (router) | Text + Image | 256K | 256K | Free | Free |
+| Kimi K2.6 | Text + Image | 262K | 262K | $0.95 | $4.00 |
+| Kimi K2.6 (router) | Text + Image | 262K | 262K | Free | Free |
+| MiniMax M2.7 (router) | Text | 204K | - | $0.30 | $1.20 |
+| MiniMax-M2.1 | Text | 197K | 200K | $0.30 | $1.20 |
 | MiniMax-M2.5 | Text | 197K | 197K | $0.30 | $1.20 |
 | MiniMax-M2.7 | Text | 197K | 197K | $0.30 | $1.20 |
 | Qwen 3.6 Plus | Text + Image | 128K | 8K | $0.50 | $3.00 |
