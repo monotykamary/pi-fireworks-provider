@@ -24,6 +24,8 @@ jobs:
 
       - name: Fetch and update models
         run: node scripts/update-models.js
+        env:
+          FIREWORKS_API_KEY: ${{ secrets.FIREWORKS_API_KEY }}
 
       - name: Check for changes
         id: check-changes
@@ -42,10 +44,11 @@ jobs:
           commit-message: 'feat: update fireworks models from API'
           title: 'feat: update fireworks models from API'
           body: |
-            Automated update of fireworks models from https://models.dev/api.json
+            Automated update of fireworks models from the Fireworks Gateway REST API.
 
             Changes include:
-            - Updated regular models in `models.json`
+            - Updated `models.json` from API (model discovery)
+            - Applied `patch.json` overrides (pricing, reasoning, limits)
             - Updated model table in `README.md`
             - Custom models in `custom-models.json` are preserved
             - Duplicate models (now available upstream) are automatically removed from `custom-models.json`
