@@ -1,7 +1,28 @@
 [
   {
+    "id": "accounts/fireworks/routers/kimi-k2p6",
+    "name": "Kimi K2.6 (router)",
+    "reasoning": true,
+    "modalities": {
+      "input": [
+        "text",
+        "image"
+      ]
+    },
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 262144,
+      "output": 262144
+    }
+  },
+  {
     "id": "accounts/fireworks/routers/glm-5p1-fast",
-    "name": "GLM 5.1 Fast (firepass)",
+    "name": "GLM 5.1 Fast (router)",
     "reasoning": true,
     "modalities": {
       "input": [
@@ -21,7 +42,7 @@
   },
   {
     "id": "accounts/fireworks/routers/minimax-m2p7",
-    "name": "MiniMax M2.7 (firepass)",
+    "name": "MiniMax M2.7 (router)",
     "reasoning": true,
     "modalities": {
       "input": [
