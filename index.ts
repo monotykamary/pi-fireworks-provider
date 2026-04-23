@@ -25,7 +25,7 @@
  * Then use /model to select from available models
  */
 
-import type { AuthStorage, ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import type { ExtensionAPI, ModelRegistry } from "@mariozechner/pi-coding-agent";
 import regularModels from "./models.json" with { type: "json" };
 import customModels from "./custom-models.json" with { type: "json" };
 import patches from "./patch.json" with { type: "json" };
@@ -202,38 +202,36 @@ const models = buildModels(
   patches as Record<string, PatchEntry>
 );
 
-// ─── API Key Resolution (via AuthStorage) ────────────────────────────────────
+// ─── API Key Resolution (via ModelRegistry) ────────────────────────────────────
 
 /**
- * Cached API key resolved from AuthStorage.
+ * Cached API key resolved from ModelRegistry.
  *
- * Pi's core resolves the key via AuthStorage.getApiKey() before making requests,
+ * Pi's core resolves the key via ModelRegistry before making requests,
  * but we also cache it here so we can resolve it in contexts where the resolved
  * key isn't directly available (e.g. future features like quota fetching) and
- * to make the AuthStorage dependency explicit.
+ * to make the dependency explicit.
  *
- * Resolution order (via AuthStorage.getApiKey):
+ * Resolution order (via ModelRegistry.getApiKeyForProvider):
  *   1. Runtime override (CLI --api-key)
  *   2. auth.json stored credentials (manual entry in ~/.pi/agent/auth.json)
  *   3. OAuth tokens (auto-refreshed)
- *   4. Environment variable (FIREWORKS_API_KEY)
- *   5. Fallback resolver
+ *   4. Environment variable (from auth.json or provider config)
  */
 let cachedApiKey: string | undefined;
 
 /**
- * Resolve the Fireworks API key via AuthStorage and cache the result.
- * Called on session_start and whenever ctx.modelRegistry.authStorage is available.
+ * Resolve the Fireworks API key via ModelRegistry and cache the result.
+ * Called on session_start and whenever ctx.modelRegistry is available.
  */
-async function resolveApiKey(authStorage: AuthStorage): Promise<void> {
-  const key = await authStorage.getApiKey("fireworks");
-  cachedApiKey = key ?? process.env.FIREWORKS_API_KEY;
+async function resolveApiKey(modelRegistry: ModelRegistry): Promise<void> {
+  cachedApiKey = await modelRegistry.getApiKeyForProvider("fireworks") ?? undefined;
 }
 
 export default function (pi: ExtensionAPI) {
-  // Resolve API key via AuthStorage on session start
+  // Resolve API key via ModelRegistry on session start
   pi.on("session_start", async (_event, ctx) => {
-    await resolveApiKey(ctx.modelRegistry.authStorage);
+    await resolveApiKey(ctx.modelRegistry);
   });
 
   pi.registerProvider("fireworks", {
