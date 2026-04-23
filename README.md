@@ -77,9 +77,9 @@ pi
 | Kimi K2 Instruct | Text | 131K | 16K | $1.00 | $3.00 |
 | Kimi K2 Thinking | Text | 262K | 256K | $0.60 | $2.50 |
 | Kimi K2.5 | Text + Image | 262K | 256K | $0.60 | $3.00 |
-| Kimi K2.5 Turbo (router) | Text + Image | 256K | 256K | Free | Free |
+| Kimi K2.5 Turbo (router) | Text + Image | 256K | 256K | $0.60 | $3.00 |
 | Kimi K2.6 | Text + Image | 262K | 262K | $0.95 | $4.00 |
-| Kimi K2.6 (router) | Text + Image | 262K | 262K | Free | Free |
+| Kimi K2.6 (router) | Text + Image | 262K | 262K | $0.95 | $4.00 |
 | MiniMax M2.7 (router) | Text | 204K | - | $0.30 | $1.20 |
 | MiniMax-M2.1 | Text | 197K | 200K | $0.30 | $1.20 |
 | MiniMax-M2.5 | Text | 197K | 197K | $0.30 | $1.20 |
