@@ -57,13 +57,13 @@ pi
 
 | Model | Type | Context | Max Tokens | Input Cost | Output Cost |
 |-------|------|---------|------------|------------|-------------|
-| DeepSeek-V4-Pro | Text | 1.0M | - | Free | Free |
 | Llama 3.3 70B Instruct | Text | 131K | - | Free | Free |
 | Qwen3 8B | Text | 41K | - | Free | Free |
 | Qwen3 VL 30B A3B Instruct | Text + Image | 262K | - | Free | Free |
 | Qwen3 VL 30B A3B Thinking | Text + Image | 262K | - | Free | Free |
 | DeepSeek V3.1 | Text | 164K | 164K | $0.56 | $1.68 |
 | DeepSeek V3.2 | Text | 164K | 160K | $0.56 | $1.68 |
+| DeepSeek V4 Pro | Text | 1.0M | 1.0M | Free | Free |
 | DeepSeek V4 Pro (router) | Text | 1.0M | 1.0M | $1.74 | $3.48 |
 | Gemma 4 26B A4B IT | Text + Image | 262K | - | Free | Free |
 | Gemma 4 31B IT | Text + Image | 262K | - | Free | Free |

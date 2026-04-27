@@ -1,4 +1,15 @@
 {
+  "accounts/fireworks/models/deepseek-v4-pro": {
+    "name": "DeepSeek V4 Pro",
+    "family": "deepseek",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "limit": {
+      "output": 1048576
+    }
+  },
   "accounts/fireworks/routers/deepseek-v4-pro": {
     "name": "DeepSeek V4 Pro (router)",
     "family": "deepseek",
