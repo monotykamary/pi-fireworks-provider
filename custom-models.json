@@ -1,5 +1,67 @@
 [
   {
+    "id": "accounts/fireworks/routers/deepseek-v4-pro",
+    "name": "DeepSeek V4 Pro (router)",
+    "reasoning": true,
+    "modalities": {
+      "input": [
+        "text"
+      ]
+    },
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 1048576,
+      "output": null
+    }
+  },
+  {
+    "id": "accounts/fireworks/routers/kimi-k2p5-fast",
+    "name": "Kimi K2.5 Fast (router)",
+    "reasoning": true,
+    "modalities": {
+      "input": [
+        "text",
+        "image"
+      ]
+    },
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 262144,
+      "output": null
+    }
+  },
+  {
+    "id": "accounts/fireworks/routers/kimi-k2p6-turbo",
+    "name": "Kimi K2.6 Turbo (router)",
+    "reasoning": true,
+    "modalities": {
+      "input": [
+        "text",
+        "image"
+      ]
+    },
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cache_read": 0,
+      "cache_write": 0
+    },
+    "limit": {
+      "context": 262144,
+      "output": null
+    }
+  },
+  {
     "id": "accounts/fireworks/routers/kimi-k2p6",
     "name": "Kimi K2.6 (router)",
     "reasoning": true,

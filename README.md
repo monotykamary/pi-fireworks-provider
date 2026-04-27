@@ -4,7 +4,7 @@ A [pi](https://github.com/badlogic/pi-mono) extension that registers [Fireworks 
 
 ## Features
 
-- **28+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, and GPT-OSS
+- **32+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, and GPT-OSS
 - **Unified API** via Fireworks AI's OpenAI-compatible completions endpoint
 - **Cost Tracking** with per-model pricing for budget management
 - **Reasoning Models** support for advanced reasoning capabilities
@@ -57,12 +57,14 @@ pi
 
 | Model | Type | Context | Max Tokens | Input Cost | Output Cost |
 |-------|------|---------|------------|------------|-------------|
+| DeepSeek-V4-Pro | Text | 1.0M | - | Free | Free |
 | Llama 3.3 70B Instruct | Text | 131K | - | Free | Free |
 | Qwen3 8B | Text | 41K | - | Free | Free |
 | Qwen3 VL 30B A3B Instruct | Text + Image | 262K | - | Free | Free |
 | Qwen3 VL 30B A3B Thinking | Text + Image | 262K | - | Free | Free |
 | DeepSeek V3.1 | Text | 164K | 164K | $0.56 | $1.68 |
 | DeepSeek V3.2 | Text | 164K | 160K | $0.56 | $1.68 |
+| DeepSeek V4 Pro (router) | Text | 1.0M | 1.0M | $1.74 | $3.48 |
 | Gemma 4 26B A4B IT | Text + Image | 262K | - | Free | Free |
 | Gemma 4 31B IT | Text + Image | 262K | - | Free | Free |
 | GLM 4.5 | Text | 131K | 131K | $0.55 | $2.19 |
@@ -77,9 +79,11 @@ pi
 | Kimi K2 Instruct | Text | 131K | 16K | $1.00 | $3.00 |
 | Kimi K2 Thinking | Text | 262K | 256K | $0.60 | $2.50 |
 | Kimi K2.5 | Text + Image | 262K | 256K | $0.60 | $3.00 |
+| Kimi K2.5 Fast (router) | Text + Image | 262K | 256K | $0.60 | $3.00 |
 | Kimi K2.5 Turbo (router) | Text + Image | 256K | 256K | $0.60 | $3.00 |
 | Kimi K2.6 | Text + Image | 262K | 262K | $0.95 | $4.00 |
 | Kimi K2.6 (router) | Text + Image | 262K | 262K | $0.95 | $4.00 |
+| Kimi K2.6 Turbo (router) | Text + Image | 262K | 262K | $0.95 | $4.00 |
 | MiniMax M2.7 (router) | Text | 204K | - | $0.30 | $1.20 |
 | MiniMax-M2.1 | Text | 197K | 200K | $0.30 | $1.20 |
 | MiniMax-M2.5 | Text | 197K | 197K | $0.30 | $1.20 |

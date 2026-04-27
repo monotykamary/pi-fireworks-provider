@@ -1,4 +1,68 @@
 {
+  "accounts/fireworks/routers/deepseek-v4-pro": {
+    "name": "DeepSeek V4 Pro (router)",
+    "family": "deepseek",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 1.74,
+      "output": 3.48,
+      "cache_read": 0.0145,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 1048576
+    }
+  },
+  "accounts/fireworks/routers/kimi-k2p5-fast": {
+    "name": "Kimi K2.5 Fast (router)",
+    "family": "kimi-thinking",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.6,
+      "output": 3,
+      "cache_read": 0.1,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 256000
+    },
+    "modalities": {
+      "input": [
+        "text",
+        "image",
+        "video"
+      ]
+    }
+  },
+  "accounts/fireworks/routers/kimi-k2p6-turbo": {
+    "name": "Kimi K2.6 Turbo (router)",
+    "family": "kimi-thinking",
+    "reasoning": true,
+    "interleaved": {
+      "field": "reasoning_content"
+    },
+    "cost": {
+      "input": 0.95,
+      "output": 4,
+      "cache_read": 0.16,
+      "cache_write": 0
+    },
+    "limit": {
+      "output": 262144
+    },
+    "modalities": {
+      "input": [
+        "text",
+        "image"
+      ]
+    }
+  },
   "accounts/fireworks/models/glm-5p1": {
     "name": "GLM 5.1",
     "family": "glm",
