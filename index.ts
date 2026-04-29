@@ -293,7 +293,11 @@ export default function (pi: ExtensionAPI) {
     await resolveApiKey(ctx.modelRegistry);
     revalidateModels(cachedApiKey, embeddedModels).then((freshBase) => {
       if (freshBase) {
-        pi.registerProvider("fireworks", { models: buildModels(freshBase, customModels, patches) });
+        pi.registerProvider("fireworks", {
+          baseUrl: BASE_URL,
+          apiKey: "FIREWORKS_API_KEY",
+          models: buildModels(freshBase, customModels, patches),
+        });
       }
     });
   });
