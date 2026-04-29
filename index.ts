@@ -4,12 +4,12 @@
  * Registers Fireworks as a custom provider using the openai-completions API.
  * Base URL: https://api.fireworks.ai/inference/v1
  *
- * Data flow:
- *   models.json       → auto-generated from Fireworks API (model discovery)
- *   patch.json        → manual overrides (pricing, reasoning, limits, etc.)
- *   custom-models.json → hidden/router models not in the API
+ * Model resolution strategy: Stale-While-Revalidate
+ *   1. Serve stale immediately: disk cache → embedded models.json (zero-latency)
+ *   2. Revalidate in background: live API /models → merge with embedded → cache → hot-swap
+ *   3. patch.json + custom-models.json applied on top of whichever source won
  *
- * Merge order: models.json → apply patch.json → merge custom-models.json → transform to pi format
+ * Merge order: [live|cache|embedded] → apply patch.json → merge custom-models.json → transform
  *
  * Usage:
  *   # Option 1: Store in auth.json (recommended)
@@ -26,11 +26,15 @@
  */
 
 import type { ExtensionAPI, ModelRegistry } from "@mariozechner/pi-coding-agent";
-import regularModels from "./models.json" with { type: "json" };
-import customModels from "./custom-models.json" with { type: "json" };
-import patches from "./patch.json" with { type: "json" };
+import regularModelsData from "./models.json" with { type: "json" };
+import customModelsData from "./custom-models.json" with { type: "json" };
+import patchesData from "./patch.json" with { type: "json" };
+import fs from "fs";
+import os from "os";
+import path from "path";
 
-// Model data structure from JSON files
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface JsonModel {
   id: string;
   name: string;
@@ -53,7 +57,6 @@ interface JsonModel {
   };
 }
 
-// Patch data structure (partial overrides keyed by model id)
 interface PatchEntry {
   name?: string;
   family?: string;
@@ -75,7 +78,6 @@ interface PatchEntry {
   };
 }
 
-// Pi's expected model structure
 interface PiModel {
   id: string;
   name: string;
@@ -91,10 +93,8 @@ interface PiModel {
   maxTokens: number;
 }
 
-/**
- * Deep merge a patch into a model. Nested objects (cost, limit, modalities)
- * are merged field-by-field; scalar fields are replaced.
- */
+// ─── Patch & Merge ────────────────────────────────────────────────────────────
+
 function applyPatch(model: JsonModel, patch: PatchEntry): JsonModel {
   const result = { ...model };
 
@@ -104,12 +104,8 @@ function applyPatch(model: JsonModel, patch: PatchEntry): JsonModel {
   if (patch.interleaved !== undefined) result.interleaved = patch.interleaved;
 
   if (patch.modalities) {
-    result.modalities = {
-      ...result.modalities,
-      ...patch.modalities,
-    };
+    result.modalities = { ...result.modalities, ...patch.modalities };
   }
-
   if (patch.cost) {
     result.cost = {
       input: patch.cost.input ?? result.cost?.input ?? 0,
@@ -118,7 +114,6 @@ function applyPatch(model: JsonModel, patch: PatchEntry): JsonModel {
       cache_write: patch.cost.cache_write ?? result.cost?.cache_write ?? 0,
     };
   }
-
   if (patch.limit) {
     result.limit = {
       context: patch.limit.context ?? result.limit?.context ?? 0,
@@ -129,7 +124,6 @@ function applyPatch(model: JsonModel, patch: PatchEntry): JsonModel {
   return result;
 }
 
-// Transform JSON model to Pi's expected format
 function transformModel(model: JsonModel): PiModel {
   const cost = model.cost ?? {};
   return {
@@ -148,96 +142,159 @@ function transformModel(model: JsonModel): PiModel {
   };
 }
 
-// Build the model list: regular → patch → custom → transform
-function buildModels(
-  regular: JsonModel[],
-  custom: JsonModel[],
-  patchData: Record<string, PatchEntry>
-): PiModel[] {
+/** Full pipeline: base models → patch → custom → transform to Pi format */
+function buildModels(regular: JsonModel[], custom: JsonModel[], patchData: Record<string, PatchEntry>): PiModel[] {
   const modelMap = new Map<string, JsonModel>();
 
-  // 1. Add regular models (from API)
   for (const model of regular) {
     modelMap.set(model.id, model);
   }
 
-  // 2. Apply patches (enrichment: pricing, reasoning, limits, etc.)
   for (const [id, patch] of Object.entries(patchData)) {
     const existing = modelMap.get(id);
     if (existing) {
       modelMap.set(id, applyPatch(existing, patch));
     }
-    // If patch references a model not in models.json (e.g., router models),
-    // it will be handled when custom models are merged below
   }
 
-  // 3. Add/override with custom models (routers, hidden models)
   for (const model of custom) {
     const existing = modelMap.get(model.id);
     const patch = patchData[model.id];
-
     if (existing && patch) {
-      // Custom model exists in regular + has a patch: apply patch to custom
       modelMap.set(model.id, applyPatch(model, patch));
     } else if (existing) {
-      // Custom model exists in regular but no patch: use custom as-is
-      // (custom takes precedence)
       modelMap.set(model.id, model);
     } else if (patch) {
-      // Custom model not in regular, has patch: apply patch to custom
       modelMap.set(model.id, applyPatch(model, patch));
     } else {
-      // Custom model not in regular, no patch: use as-is
       modelMap.set(model.id, model);
     }
   }
 
-  // 4. Transform all models to Pi format
   return Array.from(modelMap.values()).map(transformModel);
 }
 
-const models = buildModels(
-  regularModels as JsonModel[],
-  customModels as JsonModel[],
-  patches as Record<string, PatchEntry>
-);
+// ─── Stale-While-Revalidate Model Sync ────────────────────────────────────────
+
+const PROVIDER_ID = "fireworks";
+const BASE_URL = "https://api.fireworks.ai/inference/v1";
+const MODELS_URL = `${BASE_URL}/models`;
+const CACHE_DIR = path.join(os.homedir(), ".pi", "agent", "cache");
+const CACHE_PATH = path.join(CACHE_DIR, `${PROVIDER_ID}-models.json`);
+const LIVE_FETCH_TIMEOUT_MS = 8000;
+
+/** Filter: only keep chat models with useful metadata. */
+function isChatModel(apiModel: any): boolean {
+  return apiModel.supports_chat === true || apiModel.kind === "HF_BASE_MODEL";
+}
+
+/** Transform a model from the Fireworks /v1/models API to JsonModel format. */
+function transformApiModel(apiModel: any): JsonModel | null {
+  if (!isChatModel(apiModel)) return null;
+  return {
+    id: apiModel.id,
+    name: apiModel.id,
+    modalities: {
+      input: apiModel.supports_image_input ? ["text", "image"] : ["text"],
+    },
+    limit: {
+      context: apiModel.context_length || null,
+      output: null,
+    },
+  };
+}
+
+async function fetchLiveModels(apiKey: string): Promise<JsonModel[] | null> {
+  try {
+    const response = await fetch(MODELS_URL, {
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal: AbortSignal.timeout(LIVE_FETCH_TIMEOUT_MS),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const apiModels = Array.isArray(data) ? data : (data.data || []);
+    if (!Array.isArray(apiModels) || apiModels.length === 0) return null;
+    return apiModels.map(transformApiModel).filter((m): m is JsonModel => m !== null);
+  } catch {
+    return null;
+  }
+}
+
+function loadCachedModels(): JsonModel[] | null {
+  try {
+    const data = JSON.parse(fs.readFileSync(CACHE_PATH, "utf8"));
+    return Array.isArray(data) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function cacheModels(models: JsonModel[]): void {
+  try {
+    fs.mkdirSync(CACHE_DIR, { recursive: true });
+    fs.writeFileSync(CACHE_PATH, JSON.stringify(models, null, 2) + "\n");
+  } catch {
+    // Cache write failure is non-fatal
+  }
+}
+
+function mergeWithEmbedded(liveModels: JsonModel[], embeddedModels: JsonModel[]): JsonModel[] {
+  const embeddedIds = new Set(embeddedModels.map(m => m.id));
+  const result = [...embeddedModels];
+  for (const model of liveModels) {
+    if (!embeddedIds.has(model.id)) {
+      result.push(model);
+    }
+  }
+  return result;
+}
+
+function loadStaleModels(embeddedModels: JsonModel[]): JsonModel[] {
+  const cached = loadCachedModels();
+  if (cached && cached.length > 0) return cached;
+  return embeddedModels;
+}
+
+async function revalidateModels(apiKey: string | undefined, embeddedModels: JsonModel[]): Promise<JsonModel[] | null> {
+  if (!apiKey) return null;
+  const liveModels = await fetchLiveModels(apiKey);
+  if (!liveModels || liveModels.length === 0) return null;
+  const merged = mergeWithEmbedded(liveModels, embeddedModels);
+  cacheModels(merged);
+  return merged;
+}
 
 // ─── API Key Resolution (via ModelRegistry) ────────────────────────────────────
 
-/**
- * Cached API key resolved from ModelRegistry.
- *
- * Pi's core resolves the key via ModelRegistry before making requests,
- * but we also cache it here so we can resolve it in contexts where the resolved
- * key isn't directly available (e.g. future features like quota fetching) and
- * to make the dependency explicit.
- *
- * Resolution order (via ModelRegistry.getApiKeyForProvider):
- *   1. Runtime override (CLI --api-key)
- *   2. auth.json stored credentials (manual entry in ~/.pi/agent/auth.json)
- *   3. OAuth tokens (auto-refreshed)
- *   4. Environment variable (from auth.json or provider config)
- */
 let cachedApiKey: string | undefined;
 
-/**
- * Resolve the Fireworks API key via ModelRegistry and cache the result.
- * Called on session_start and whenever ctx.modelRegistry is available.
- */
 async function resolveApiKey(modelRegistry: ModelRegistry): Promise<void> {
   cachedApiKey = await modelRegistry.getApiKeyForProvider("fireworks") ?? undefined;
 }
 
+// ─── Extension Entry Point ────────────────────────────────────────────────────
+
 export default function (pi: ExtensionAPI) {
-  // Resolve API key via ModelRegistry on session start
-  pi.on("session_start", async (_event, ctx) => {
-    await resolveApiKey(ctx.modelRegistry);
-  });
+  const embeddedModels = regularModelsData as JsonModel[];
+  const customModels = customModelsData as JsonModel[];
+  const patches = patchesData as Record<string, PatchEntry>;
+
+  const staleBase = loadStaleModels(embeddedModels);
+  const staleModels = buildModels(staleBase, customModels, patches);
 
   pi.registerProvider("fireworks", {
-    baseUrl: "https://api.fireworks.ai/inference/v1",
+    baseUrl: BASE_URL,
     apiKey: "FIREWORKS_API_KEY",
     api: "openai-completions",
-    models,
+    models: staleModels,
+  });
+
+  pi.on("session_start", async (_event, ctx) => {
+    await resolveApiKey(ctx.modelRegistry);
+    revalidateModels(cachedApiKey, embeddedModels).then((freshBase) => {
+      if (freshBase) {
+        pi.registerProvider("fireworks", { models: buildModels(freshBase, customModels, patches) });
+      }
+    });
   });
 }
