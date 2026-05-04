@@ -2,513 +2,375 @@
   {
     "id": "accounts/fireworks/models/deepseek-v3p1",
     "name": "DeepSeek V3.1",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 163840,
-      "output": null
-    }
+    "contextWindow": 163840,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/deepseek-v3p2",
     "name": "Deepseek v3.2",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 163840,
-      "output": null
-    }
+    "contextWindow": 163840,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/deepseek-v4-pro",
     "name": "DeepSeek-V4-Pro",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 1048576,
-      "output": null
-    }
+    "contextWindow": 1048576,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/glm-4p5",
     "name": "GLM-4.5",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 131072,
-      "output": null
-    }
+    "contextWindow": 131072,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/glm-4p5-air",
     "name": "GLM-4.5-Air",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 131072,
-      "output": null
-    }
+    "contextWindow": 131072,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/glm-4p7",
     "name": "GLM-4.7",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 202752,
-      "output": null
-    }
+    "contextWindow": 202752,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/glm-5",
     "name": "GLM-5",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 202752,
-      "output": null
-    }
+    "contextWindow": 202752,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/glm-5p1",
     "name": "GLM 5.1",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 202752,
-      "output": null
-    }
+    "contextWindow": 202752,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/gpt-oss-120b",
     "name": "OpenAI gpt-oss-120b",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 131072,
-      "output": null
-    }
+    "contextWindow": 131072,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/gpt-oss-20b",
     "name": "OpenAI gpt-oss-20b",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 131072,
-      "output": null
-    }
+    "contextWindow": 131072,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/kimi-k2-instruct",
     "name": "Kimi K2 Instruct",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 131072,
-      "output": null
-    }
+    "contextWindow": 131072,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/kimi-k2p5",
     "name": "Kimi K2.5",
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text",
+      "image"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 262144,
-      "output": null
-    }
+    "contextWindow": 262144,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/kimi-k2p6",
     "name": "Kimi K2.6",
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text",
+      "image"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 262144,
-      "output": null
-    }
+    "contextWindow": 262144,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/kimi-k2-thinking",
     "name": "Kimi K2 Thinking",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 262144,
-      "output": null
-    }
+    "contextWindow": 262144,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/llama-v3p3-70b-instruct",
     "name": "Llama 3.3 70B Instruct",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 131072,
-      "output": null
-    }
+    "contextWindow": 131072,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/minimax-m2p1",
     "name": "MiniMax-M2.1",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 196608,
-      "output": null
-    }
+    "contextWindow": 196608,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/minimax-m2p5",
     "name": "MiniMax-M2.5",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 196608,
-      "output": null
-    }
+    "contextWindow": 196608,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/minimax-m2p7",
     "name": "MiniMax M2.7",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 196608,
-      "output": null
-    }
+    "contextWindow": 196608,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/qwen3-8b",
     "name": "Qwen3 8B",
-    "modalities": {
-      "input": [
-        "text"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 40960,
-      "output": null
-    }
+    "contextWindow": 40960,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/qwen3-vl-30b-a3b-instruct",
     "name": "Qwen3 VL 30B A3B Instruct",
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text",
+      "image"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 262144,
-      "output": null
-    }
+    "contextWindow": 262144,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/qwen3-vl-30b-a3b-thinking",
     "name": "Qwen3 VL 30B A3B Thinking",
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ],
-      "output": [
-        "text"
-      ]
-    },
+    "reasoning": false,
+    "input": [
+      "text",
+      "image"
+    ],
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 262144,
-      "output": null
-    }
+    "contextWindow": 262144,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/qwen3p6-plus",
     "name": "Qwen 3.6 Plus",
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ],
-      "output": [
-        "text"
-      ]
-    },
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 128000,
-      "output": null
-    }
+    "input": [
+      "text",
+      "image"
+    ],
+    "contextWindow": 128000,
+    "maxTokens": 0,
+    "reasoning": false
   },
   {
     "id": "accounts/fireworks/routers/kimi-k2p5-turbo",
     "name": "Kimi K2.5 Turbo (router)",
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ],
-      "output": [
-        "text"
-      ]
-    },
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 256000,
-      "output": null
-    }
+    "input": [
+      "text",
+      "image"
+    ],
+    "contextWindow": 256000,
+    "maxTokens": 0,
+    "reasoning": false
   }
 ]

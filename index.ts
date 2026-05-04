@@ -9,7 +9,7 @@
  *   2. Revalidate in background: live API /models → merge with embedded → cache → hot-swap
  *   3. patch.json + custom-models.json applied on top of whichever source won
  *
- * Merge order: [live|cache|embedded] → apply patch.json → merge custom-models.json → transform
+ * Merge order: [live|cache|embedded] → apply patch.json → merge custom-models.json
  *
  * Usage:
  *   # Option 1: Store in auth.json (recommended)
@@ -26,9 +26,9 @@
  */
 
 import type { ExtensionAPI, ModelRegistry } from "@mariozechner/pi-coding-agent";
-import regularModelsData from "./models.json" with { type: "json" };
+import modelsData from "./models.json" with { type: "json" };
 import customModelsData from "./custom-models.json" with { type: "json" };
-import patchesData from "./patch.json" with { type: "json" };
+import patchData from "./patch.json" with { type: "json" };
 import fs from "fs";
 import os from "os";
 import path from "path";
@@ -36,49 +36,6 @@ import path from "path";
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface JsonModel {
-  id: string;
-  name: string;
-  family?: string;
-  reasoning?: boolean;
-  interleaved?: { field: string };
-  modalities: {
-    input: string[];
-    output?: string[];
-  };
-  cost?: {
-    input: number;
-    output: number;
-    cache_read: number;
-    cache_write: number;
-  };
-  limit: {
-    context: number | null;
-    output: number | null;
-  };
-}
-
-interface PatchEntry {
-  name?: string;
-  family?: string;
-  reasoning?: boolean;
-  interleaved?: { field: string };
-  modalities?: {
-    input: string[];
-    output?: string[];
-  };
-  cost?: {
-    input: number;
-    output: number;
-    cache_read: number;
-    cache_write: number;
-  };
-  limit?: {
-    context?: number;
-    output?: number;
-  };
-}
-
-interface PiModel {
   id: string;
   name: string;
   reasoning: boolean;
@@ -91,87 +48,95 @@ interface PiModel {
   };
   contextWindow: number;
   maxTokens: number;
+  compat?: {
+    supportsDeveloperRole?: boolean;
+    supportsStore?: boolean;
+    maxTokensField?: "max_completion_tokens" | "max_tokens";
+    thinkingFormat?: "openai" | "zai" | "qwen" | "qwen-chat-template";
+    supportsReasoningEffort?: boolean;
+  };
 }
 
-// ─── Patch & Merge ────────────────────────────────────────────────────────────
+interface PatchEntry {
+  name?: string;
+  reasoning?: boolean;
+  input?: string[];
+  cost?: {
+    input?: number;
+    output?: number;
+    cacheRead?: number;
+    cacheWrite?: number;
+  };
+  contextWindow?: number;
+  maxTokens?: number;
+  compat?: Record<string, unknown>;
+}
+
+type PatchData = Record<string, PatchEntry>;
+
+// ─── Patch Application ────────────────────────────────────────────────────────
 
 function applyPatch(model: JsonModel, patch: PatchEntry): JsonModel {
   const result = { ...model };
 
   if (patch.name !== undefined) result.name = patch.name;
-  if (patch.family !== undefined) result.family = patch.family;
   if (patch.reasoning !== undefined) result.reasoning = patch.reasoning;
-  if (patch.interleaved !== undefined) result.interleaved = patch.interleaved;
+  if (patch.input !== undefined) result.input = patch.input;
+  if (patch.contextWindow !== undefined) result.contextWindow = patch.contextWindow;
+  if (patch.maxTokens !== undefined) result.maxTokens = patch.maxTokens;
 
-  if (patch.modalities) {
-    result.modalities = { ...result.modalities, ...patch.modalities };
-  }
   if (patch.cost) {
     result.cost = {
-      input: patch.cost.input ?? result.cost?.input ?? 0,
-      output: patch.cost.output ?? result.cost?.output ?? 0,
-      cache_read: patch.cost.cache_read ?? result.cost?.cache_read ?? 0,
-      cache_write: patch.cost.cache_write ?? result.cost?.cache_write ?? 0,
+      input: patch.cost.input ?? result.cost.input,
+      output: patch.cost.output ?? result.cost.output,
+      cacheRead: patch.cost.cacheRead ?? result.cost.cacheRead,
+      cacheWrite: patch.cost.cacheWrite ?? result.cost.cacheWrite,
     };
   }
-  if (patch.limit) {
-    result.limit = {
-      context: patch.limit.context ?? result.limit?.context ?? 0,
-      output: patch.limit.output ?? result.limit?.output ?? null,
-    };
+  if (patch.compat) {
+    result.compat = { ...(result.compat || {}), ...patch.compat };
+  }
+
+  if (!result.reasoning && result.compat?.thinkingFormat) {
+    delete result.compat.thinkingFormat;
+  }
+  if (result.compat && Object.keys(result.compat).length === 0) {
+    delete result.compat;
   }
 
   return result;
 }
 
-function transformModel(model: JsonModel): PiModel {
-  const cost = model.cost ?? {};
-  return {
-    id: model.id,
-    name: model.name,
-    reasoning: model.reasoning ?? false,
-    input: model.modalities.input,
-    cost: {
-      input: cost.input ?? 0,
-      output: cost.output ?? 0,
-      cacheRead: cost.cache_read ?? 0,
-      cacheWrite: cost.cache_write ?? 0,
-    },
-    contextWindow: model.limit.context ?? 0,
-    maxTokens: model.limit.output ?? 0,
-  };
-}
-
-/** Full pipeline: base models → patch → custom → transform to Pi format */
-function buildModels(regular: JsonModel[], custom: JsonModel[], patchData: Record<string, PatchEntry>): PiModel[] {
+/** Full pipeline: base models → patch → custom → result */
+function buildModels(base: JsonModel[], custom: JsonModel[], patch: PatchData): JsonModel[] {
   const modelMap = new Map<string, JsonModel>();
 
-  for (const model of regular) {
+  for (const model of base) {
     modelMap.set(model.id, model);
   }
 
-  for (const [id, patch] of Object.entries(patchData)) {
+  for (const [id, patchEntry] of Object.entries(patch)) {
     const existing = modelMap.get(id);
     if (existing) {
-      modelMap.set(id, applyPatch(existing, patch));
+      modelMap.set(id, applyPatch(existing, patchEntry));
     }
   }
 
   for (const model of custom) {
     const existing = modelMap.get(model.id);
-    const patch = patchData[model.id];
-    if (existing && patch) {
-      modelMap.set(model.id, applyPatch(model, patch));
+    const patchEntry = patch[model.id];
+    if (existing && patchEntry) {
+      modelMap.set(model.id, applyPatch(model, patchEntry));
     } else if (existing) {
       modelMap.set(model.id, model);
-    } else if (patch) {
-      modelMap.set(model.id, applyPatch(model, patch));
+    } else if (patchEntry) {
+      modelMap.set(model.id, applyPatch(model, patchEntry));
     } else {
       modelMap.set(model.id, model);
     }
   }
 
-  return Array.from(modelMap.values()).map(transformModel);
+  return Array.from(modelMap.values());
 }
 
 // ─── Stale-While-Revalidate Model Sync ────────────────────────────────────────
@@ -194,13 +159,11 @@ function transformApiModel(apiModel: any): JsonModel | null {
   return {
     id: apiModel.id,
     name: apiModel.id,
-    modalities: {
-      input: apiModel.supports_image_input ? ["text", "image"] : ["text"],
-    },
-    limit: {
-      context: apiModel.context_length || null,
-      output: null,
-    },
+    reasoning: false,
+    input: apiModel.supports_image_input ? ["text", "image"] : ["text"],
+    cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+    contextWindow: apiModel.context_length || 0,
+    maxTokens: 0,
   };
 }
 
@@ -276,9 +239,9 @@ async function resolveApiKey(modelRegistry: ModelRegistry): Promise<void> {
 // ─── Extension Entry Point ────────────────────────────────────────────────────
 
 export default function (pi: ExtensionAPI) {
-  const embeddedModels = regularModelsData as JsonModel[];
+  const embeddedModels = modelsData as JsonModel[];
   const customModels = customModelsData as JsonModel[];
-  const patches = patchesData as Record<string, PatchEntry>;
+  const patches = patchData as PatchData;
 
   const staleBase = loadStaleModels(embeddedModels);
   const staleModels = buildModels(staleBase, customModels, patches);

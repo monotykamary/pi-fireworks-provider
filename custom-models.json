@@ -3,185 +3,149 @@
     "id": "accounts/fireworks/routers/deepseek-v4-pro",
     "name": "DeepSeek V4 Pro (router)",
     "reasoning": true,
-    "modalities": {
-      "input": [
-        "text"
-      ]
-    },
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 1048576,
-      "output": null
-    }
+    "input": [
+      "text"
+    ],
+    "contextWindow": 1048576,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/routers/kimi-k2p5-fast",
     "name": "Kimi K2.5 Fast (router)",
     "reasoning": true,
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ]
-    },
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 262144,
-      "output": null
-    }
+    "input": [
+      "text",
+      "image"
+    ],
+    "contextWindow": 262144,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/routers/kimi-k2p6-turbo",
     "name": "Kimi K2.6 Turbo (router)",
     "reasoning": true,
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ]
-    },
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 262144,
-      "output": null
-    }
+    "input": [
+      "text",
+      "image"
+    ],
+    "contextWindow": 262144,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/routers/kimi-k2p6",
     "name": "Kimi K2.6 (router)",
     "reasoning": true,
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ]
-    },
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 262144,
-      "output": 262144
-    }
+    "input": [
+      "text",
+      "image"
+    ],
+    "contextWindow": 262144,
+    "maxTokens": 262144
   },
   {
     "id": "accounts/fireworks/routers/glm-5p1-fast",
     "name": "GLM 5.1 Fast (router)",
     "reasoning": true,
-    "modalities": {
-      "input": [
-        "text"
-      ]
-    },
     "cost": {
       "input": 1.4,
       "output": 4.4,
-      "cache_read": 0.26,
-      "cache_write": 0
+      "cacheRead": 0.26,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 202800,
-      "output": 131072
-    }
+    "input": [
+      "text"
+    ],
+    "contextWindow": 202800,
+    "maxTokens": 131072
   },
   {
     "id": "accounts/fireworks/routers/minimax-m2p7",
     "name": "MiniMax M2.7 (router)",
     "reasoning": true,
-    "modalities": {
-      "input": [
-        "text"
-      ]
-    },
     "cost": {
       "input": 0.3,
       "output": 1.2,
-      "cache_read": 0.06,
-      "cache_write": 0
+      "cacheRead": 0.06,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 204000,
-      "output": null
-    }
+    "input": [
+      "text"
+    ],
+    "contextWindow": 204000,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/routers/glm-5-fast",
     "name": "GLM 5 Fast",
     "reasoning": true,
-    "modalities": {
-      "input": [
-        "text"
-      ]
-    },
     "cost": {
       "input": 1,
       "output": 3.2,
-      "cache_read": 0.5,
-      "cache_write": 0
+      "cacheRead": 0.5,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 202752,
-      "output": 131072
-    }
+    "input": [
+      "text"
+    ],
+    "contextWindow": 202752,
+    "maxTokens": 131072
   },
   {
     "id": "accounts/fireworks/models/gemma-4-31b-it",
     "name": "Gemma 4 31B IT",
     "reasoning": true,
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ]
-    },
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 262000,
-      "output": null
-    }
+    "input": [
+      "text",
+      "image"
+    ],
+    "contextWindow": 262000,
+    "maxTokens": 0
   },
   {
     "id": "accounts/fireworks/models/gemma-4-26b-a4b-it",
     "name": "Gemma 4 26B A4B IT",
     "reasoning": true,
-    "modalities": {
-      "input": [
-        "text",
-        "image"
-      ]
-    },
     "cost": {
       "input": 0,
       "output": 0,
-      "cache_read": 0,
-      "cache_write": 0
+      "cacheRead": 0,
+      "cacheWrite": 0
     },
-    "limit": {
-      "context": 262000,
-      "output": null
-    }
+    "input": [
+      "text",
+      "image"
+    ],
+    "contextWindow": 262000,
+    "maxTokens": 0
   }
 ]

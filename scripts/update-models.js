@@ -142,7 +142,7 @@ function buildDisplayName(m) {
 }
 
 /**
- * Convert a Fireworks API model to our models.json format.
+ * Convert a Fireworks API model to Pi-native models.json format.
  * Only includes data the API provides — no pricing, reasoning, or output limits.
  * Those come from patch.json.
  */
@@ -155,26 +155,22 @@ function convertModel(apiModel) {
   return {
     id,
     name,
-    modalities: {
-      input,
-      output: ['text'],
-    },
+    reasoning: false,
+    input,
     cost: {
       input: 0,
       output: 0,
-      cache_read: 0,
-      cache_write: 0,
+      cacheRead: 0,
+      cacheWrite: 0,
     },
-    limit: {
-      context: apiModel.contextLength || 0,
-      output: null,
-    },
+    contextWindow: apiModel.contextLength || 0,
+    maxTokens: 0,
   };
 }
 
 /**
- * Deep merge a patch into a model. Nested objects (cost, limit, modalities)
- * are merged field-by-field; scalar fields are replaced.
+ * Deep merge a patch into a model. Nested objects (cost) are merged
+ * field-by-field; scalar fields are replaced.
  */
 function applyPatch(model, patch) {
   const result = { ...model };
@@ -184,23 +180,16 @@ function applyPatch(model, patch) {
   if (patch.reasoning !== undefined) result.reasoning = patch.reasoning;
   if (patch.interleaved !== undefined) result.interleaved = patch.interleaved;
 
-  if (patch.modalities) {
-    result.modalities = { ...result.modalities, ...patch.modalities };
-  }
+  if (patch.input !== undefined) result.input = patch.input;
+  if (patch.contextWindow !== undefined) result.contextWindow = patch.contextWindow;
+  if (patch.maxTokens !== undefined) result.maxTokens = patch.maxTokens;
 
   if (patch.cost) {
     result.cost = {
       input: patch.cost.input ?? result.cost?.input ?? 0,
       output: patch.cost.output ?? result.cost?.output ?? 0,
-      cache_read: patch.cost.cache_read ?? result.cost?.cache_read ?? 0,
-      cache_write: patch.cost.cache_write ?? result.cost?.cache_write ?? 0,
-    };
-  }
-
-  if (patch.limit) {
-    result.limit = {
-      context: patch.limit.context ?? result.limit?.context ?? 0,
-      output: patch.limit.output ?? result.limit?.output ?? null,
+      cacheRead: patch.cost.cacheRead ?? result.cost?.cacheRead ?? 0,
+      cacheWrite: patch.cost.cacheWrite ?? result.cost?.cacheWrite ?? 0,
     };
   }
 
@@ -222,8 +211,8 @@ function formatNumber(num) {
   return num.toString();
 }
 
-function getInputTypes(modalities) {
-  const types = modalities?.input || ['text'];
+function getInputTypes(inputTypes) {
+  const types = inputTypes || ['text'];
   const hasImage = types.includes('image');
   const hasText = types.includes('text');
   if (hasImage && hasText) return 'Text + Image';
@@ -233,8 +222,7 @@ function getInputTypes(modalities) {
 
 function generateReadmeRow(model) {
   const cost = model.cost || {};
-  const limit = model.limit || {};
-  return `| ${model.name} | ${getInputTypes(model.modalities)} | ${formatNumber(limit.context)} | ${formatNumber(limit.output)} | ${formatCost(cost.input)} | ${formatCost(cost.output)} |`;
+  return `| ${model.name} | ${getInputTypes(model.input)} | ${formatNumber(model.contextWindow)} | ${formatNumber(model.maxTokens)} | ${formatCost(cost.input)} | ${formatCost(cost.output)} |`;
 }
 
 function updateReadme(models) {
