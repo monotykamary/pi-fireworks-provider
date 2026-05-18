@@ -286,18 +286,8 @@ async function main() {
       }
     }
 
-    // Preserve previously curated models that aren't in the API
-    // (e.g., router models, non-serverless models still available via firepass)
-    const apiIds = new Set(relevantApiModels.map((m) => m.name));
-    const preservedModels = [];
-    for (const existing of existingModels) {
-      if (!apiIds.has(existing.id)) {
-        console.log(`  ⚠️  Not in API, preserving: ${existing.id} (${existing.name})`);
-        preservedModels.push(existing);
-      }
-    }
-
-    const allUpstreamModels = [...newModels, ...preservedModels];
+    // Live API is authoritative — models absent from API are removed
+    const allUpstreamModels = [...newModels];
 
     // 5. Save upstream models (API-derived, no pricing)
     saveJSON(MODELS_PATH, allUpstreamModels);
