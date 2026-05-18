@@ -338,39 +338,5 @@
     },
     "contextWindow": 262144,
     "maxTokens": 0
-  },
-  {
-    "id": "accounts/fireworks/models/qwen3p6-plus",
-    "name": "Qwen 3.6 Plus",
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "input": [
-      "text",
-      "image"
-    ],
-    "contextWindow": 128000,
-    "maxTokens": 0,
-    "reasoning": false
-  },
-  {
-    "id": "accounts/fireworks/routers/kimi-k2p5-turbo",
-    "name": "Kimi K2.5 Turbo (router)",
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "input": [
-      "text",
-      "image"
-    ],
-    "contextWindow": 256000,
-    "maxTokens": 0,
-    "reasoning": false
   }
 ]

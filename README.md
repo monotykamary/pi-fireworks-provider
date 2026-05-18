@@ -4,7 +4,7 @@ A [pi](https://github.com/badlogic/pi-mono) extension that registers [Fireworks 
 
 ## Features
 
-- **32+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, and GPT-OSS
+- **30+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, and GPT-OSS
 - **Unified API** via Fireworks AI's OpenAI-compatible completions endpoint
 - **Cost Tracking** with per-model pricing for budget management
 - **Reasoning Models** support for advanced reasoning capabilities
@@ -76,7 +76,6 @@ pi
 | Kimi K2 Thinking | Text | 262K | 256K | $0.60 | $2.50 |
 | Kimi K2.5 | Text + Image | 262K | 256K | $0.60 | $3.00 |
 | Kimi K2.5 Fast (router) | Text + Image | 262K | 256K | $0.60 | $3.00 |
-| Kimi K2.5 Turbo (router) | Text + Image | 256K | 256K | $0.60 | $3.00 |
 | Kimi K2.6 | Text + Image | 262K | 262K | $0.95 | $4.00 |
 | Kimi K2.6 (router) | Text + Image | 262K | 262K | $0.95 | $4.00 |
 | Kimi K2.6 Turbo (router) | Text + Image | 262K | 262K | $0.95 | $4.00 |
@@ -85,7 +84,6 @@ pi
 | MiniMax-M2.1 | Text | 197K | 200K | $0.30 | $1.20 |
 | MiniMax-M2.5 | Text | 197K | 197K | $0.30 | $1.20 |
 | MiniMax-M2.7 | Text | 197K | 197K | $0.30 | $1.20 |
-| Qwen 3.6 Plus | Text + Image | 128K | 8K | $0.50 | $3.00 |
 | Qwen3 8B | Text | 41K | 0 | Free | Free |
 | Qwen3 VL 30B A3B Instruct | Text + Image | 262K | 0 | Free | Free |
 | Qwen3 VL 30B A3B Thinking | Text + Image | 262K | 0 | Free | Free |
