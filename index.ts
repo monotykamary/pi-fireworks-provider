@@ -221,8 +221,16 @@ function mergeWithEmbedded(liveModels: JsonModel[], embeddedModels: JsonModel[])
 
 function loadStaleModels(embeddedModels: JsonModel[]): JsonModel[] {
   const cached = loadCachedModels();
-  if (cached && cached.length > 0) return cached;
-  return embeddedModels;
+  if (!cached || cached.length === 0) return embeddedModels;
+
+  // Merge embedded models that are missing from cache (newly added models)
+  const cachedMap = new Map(cached.map(m => [m.id, m]));
+  for (const em of embeddedModels) {
+    if (!cachedMap.has(em.id)) {
+      cached.push(em);
+    }
+  }
+  return cached;
 }
 
 async function revalidateModels(apiKey: string | undefined, embeddedModels: JsonModel[], signal?: AbortSignal): Promise<JsonModel[] | null> {

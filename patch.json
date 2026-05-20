@@ -2,6 +2,12 @@
   "accounts/fireworks/models/deepseek-v4-flash": {
     "name": "DeepSeek V4 Flash",
     "reasoning": true,
+    "cost": {
+      "input": 0.14,
+      "output": 0.28,
+      "cacheRead": 0.03,
+      "cacheWrite": 0
+    },
     "maxTokens": 1048576
   },
   "accounts/fireworks/models/deepseek-v4-pro": {

@@ -61,7 +61,7 @@ pi
 | DeepSeek V3.2 | Text | 164K | 160K | $0.56 | $1.68 |
 | DeepSeek V4 Pro | Text | 1.0M | 1.0M | Free | Free |
 | DeepSeek V4 Pro (router) | Text | 1.0M | 1.0M | $1.74 | $3.48 |
-| DeepSeek V4 Flash | Text | 1.0M | 1.0M | Free | Free |
+| DeepSeek V4 Flash | Text | 1.0M | 1.0M | $0.14 | $0.28 |
 | Gemma 4 26B A4B IT | Text + Image | 262K | 0 | Free | Free |
 | Gemma 4 31B IT | Text + Image | 262K | 0 | Free | Free |
 | GLM 4.5 | Text | 131K | 131K | $0.55 | $2.19 |
