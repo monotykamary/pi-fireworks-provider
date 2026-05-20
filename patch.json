@@ -1,4 +1,9 @@
 {
+  "accounts/fireworks/models/deepseek-v4-flash": {
+    "name": "DeepSeek V4 Flash",
+    "reasoning": true,
+    "maxTokens": 1048576
+  },
   "accounts/fireworks/models/deepseek-v4-pro": {
     "name": "DeepSeek V4 Pro",
     "reasoning": true,
