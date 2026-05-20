@@ -203,9 +203,11 @@ function cacheModels(models: JsonModel[]): void {
 
 function mergeWithEmbedded(liveModels: JsonModel[], embeddedModels: JsonModel[]): JsonModel[] {
   const embeddedMap = new Map(embeddedModels.map(m => [m.id, m]));
+  const seen = new Set<string>();
   const result: JsonModel[] = [];
   for (const liveModel of liveModels) {
     const embedded = embeddedMap.get(liveModel.id);
+    seen.add(liveModel.id);
     if (embedded) {
       result.push({
         ...liveModel,
@@ -214,6 +216,12 @@ function mergeWithEmbedded(liveModels: JsonModel[], embeddedModels: JsonModel[])
       });
     } else {
       result.push(liveModel);
+    }
+  }
+  // Append any embedded models that the live API didn't return
+  for (const em of embeddedModels) {
+    if (!seen.has(em.id)) {
+      result.push(em);
     }
   }
   return result;
