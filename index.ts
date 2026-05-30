@@ -259,6 +259,72 @@ async function resolveApiKey(modelRegistry: ModelRegistry): Promise<void> {
   cachedApiKey = await modelRegistry.getApiKeyForProvider("fireworks") ?? undefined;
 }
 
+// ─── Kimi Regex Anchor Bleed Fix ──────────────────────────────────────────────
+
+function isFireworksKimiModel(model: any): boolean {
+  if (!model || model.provider !== "fireworks") return false;
+  return /kimi-k2/i.test(model.id);
+}
+
+function sanitizePattern(pattern: string): string | undefined {
+  // Alternation combined with anchors is the known trigger for Kimi's
+  // regex anchor bleed bug. Remove the entire pattern in that case.
+  if (pattern.includes("|") && (pattern.includes("^") || pattern.includes("$"))) {
+    return undefined;
+  }
+  // For simple patterns, strip anchors so they can't leak into values.
+  const stripped = pattern.replace(/\^|\$/g, "");
+  return stripped.length > 0 ? stripped : undefined;
+}
+
+function sanitizeSchemaForKimi(schema: any): any {
+  if (!schema || typeof schema !== "object") return schema;
+  if (Array.isArray(schema)) {
+    return schema.map((item) => sanitizeSchemaForKimi(item));
+  }
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === "pattern" && typeof value === "string") {
+      const sanitized = sanitizePattern(value);
+      if (sanitized !== undefined) {
+        result[key] = sanitized;
+      }
+      // If sanitized is undefined, we omit the key entirely.
+    } else if (value && typeof value === "object") {
+      result[key] = sanitizeSchemaForKimi(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+function stripAnchorBleedInPlace(obj: Record<string, unknown>): void {
+  for (const key of Object.keys(obj)) {
+    const value = obj[key];
+    if (typeof value === "string") {
+      let s = value;
+      while (s.startsWith("^")) s = s.slice(1);
+      while (s.endsWith("$")) s = s.slice(0, -1);
+      obj[key] = s;
+    } else if (Array.isArray(value)) {
+      for (let i = 0; i < value.length; i++) {
+        const item = value[i];
+        if (typeof item === "string") {
+          let s = item;
+          while (s.startsWith("^")) s = s.slice(1);
+          while (s.endsWith("$")) s = s.slice(0, -1);
+          value[i] = s;
+        } else if (item && typeof item === "object") {
+          stripAnchorBleedInPlace(item as Record<string, unknown>);
+        }
+      }
+    } else if (value && typeof value === "object") {
+      stripAnchorBleedInPlace(value as Record<string, unknown>);
+    }
+  }
+}
+
 // ─── Extension Entry Point ────────────────────────────────────────────────────
 
 export default function (pi: ExtensionAPI) {
@@ -296,5 +362,58 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("session_shutdown", () => {
     revalidateAbort?.abort();
+  });
+
+  // Sanitize JSON Schema patterns for Kimi models before sending to Fireworks.
+  // Kimi K2.x has a known bug where regex anchors (^ and $) in pattern fields
+  // leak into generated argument strings, especially when alternation (|) is
+  // present. We strip anchors from simple patterns and drop patterns that
+  // combine alternation with anchors entirely.
+  pi.on("before_provider_request", (event, ctx) => {
+    if (!isFireworksKimiModel(ctx.model)) return;
+
+    const payload = event.payload as Record<string, unknown>;
+    if (!payload || typeof payload !== "object") return;
+
+    let modified = false;
+
+    const tools = payload.tools;
+    if (Array.isArray(tools)) {
+      payload.tools = tools.map((tool: any) => {
+        if (tool?.function?.parameters) {
+          return {
+            ...tool,
+            function: {
+              ...tool.function,
+              parameters: sanitizeSchemaForKimi(tool.function.parameters),
+            },
+          };
+        }
+        return tool;
+      });
+      modified = true;
+    }
+
+    const responseFormat = payload.response_format as any;
+    if (responseFormat?.json_schema?.schema) {
+      responseFormat.json_schema.schema = sanitizeSchemaForKimi(responseFormat.json_schema.schema);
+      modified = true;
+    }
+
+    if (modified) {
+      return payload;
+    }
+  });
+
+  // Defense-in-depth: if the model still generates a value with a leading ^ or
+  // trailing $ (anchor bleed), strip those characters from string tool arguments
+  // before they reach the tool / MCP server.
+  pi.on("tool_call", (event, ctx) => {
+    if (!isFireworksKimiModel(ctx.model)) return;
+
+    const input = (event as any).input;
+    if (input && typeof input === "object") {
+      stripAnchorBleedInPlace(input);
+    }
   });
 }
