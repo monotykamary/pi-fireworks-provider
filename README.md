@@ -1,6 +1,17 @@
-# pi-fireworks-provider
+<div align="center">
 
-A [pi](https://github.com/badlogic/pi-mono) extension that registers [Fireworks AI](https://fireworks.ai/) as a custom provider. Access Kimi, MiniMax, GLM, DeepSeek, and GPT-OSS models through a unified OpenAI-compatible API.
+# 🎆 pi-fireworks-provider
+
+**31+ models through [Fireworks AI](https://fireworks.ai/)**
+
+_Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — unified OpenAI-compatible API for [pi](https://github.com/earendil-works/pi-coding-agent)._
+
+[![pi extension](https://img.shields.io/badge/pi-extension-blueviolet)](https://github.com/earendil-works/pi-coding-agent)
+[![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
+
+</div>
+
+---
 
 ## Features
 
