@@ -15,7 +15,7 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — unified OpenAI-compatible API for [pi
 
 ## Features
 
-- **31+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
+- **34+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
 - **Unified API** via Fireworks AI's OpenAI-compatible completions endpoint
 - **Cost Tracking** with per-model pricing for budget management
 - **Reasoning Models** support for advanced reasoning capabilities
@@ -91,11 +91,14 @@ pi
 | Kimi K2.6 | Text + Image | 262K | 262K | $0.95 | $4.00 |
 | Kimi K2.6 (router) | Text + Image | 262K | 262K | $0.95 | $4.00 |
 | Kimi K2.6 Turbo (router) | Text + Image | 262K | 262K | $0.95 | $4.00 |
+| Kimi K2.7 Code | Text + Image | 262K | 0 | Free | Free |
 | Llama 3.3 70B Instruct | Text | 131K | 0 | Free | Free |
 | MiniMax M2.7 (router) | Text | 204K | 0 | $0.30 | $1.20 |
+| Minimax M3 | Text + Image | 512K | 0 | Free | Free |
 | MiniMax-M2.1 | Text | 197K | 200K | $0.30 | $1.20 |
 | MiniMax-M2.5 | Text | 197K | 197K | $0.30 | $1.20 |
 | MiniMax-M2.7 | Text | 197K | 197K | $0.30 | $1.20 |
+| NVIDIA Nemotron 3 Ultra NVFP4 | Text | 262K | 0 | Free | Free |
 | Qwen3 8B | Text | 41K | 0 | Free | Free |
 | Qwen3 VL 30B A3B Instruct | Text + Image | 262K | 0 | Free | Free |
 | Qwen3 VL 30B A3B Thinking | Text + Image | 262K | 0 | Free | Free |
