@@ -15,7 +15,7 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — unified OpenAI-compatible API for [pi
 
 ## Features
 
-- **34+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
+- **35+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
 - **Unified API** via Fireworks AI's OpenAI-compatible completions endpoint
 - **Cost Tracking** with per-model pricing for budget management
 - **Reasoning Models** support for advanced reasoning capabilities
@@ -82,6 +82,7 @@ pi
 | GLM 5 Fast (router) | Text | 203K | 131K | $1.00 | $3.20 |
 | GLM 5.1 | Text | 203K | 131K | $1.40 | $4.40 |
 | GLM 5.1 Fast (router) | Text | 203K | 131K | $1.40 | $4.40 |
+| GLM 5.2 | Text | 1.0M | 0 | Free | Free |
 | GPT OSS 120B | Text | 131K | 33K | $0.15 | $0.60 |
 | GPT OSS 20B | Text | 131K | 33K | $0.05 | $0.20 |
 | Kimi K2 Instruct | Text | 131K | 16K | $1.00 | $3.00 |
