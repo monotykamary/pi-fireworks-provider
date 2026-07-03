@@ -1,87 +1,16 @@
 {
-  "accounts/fireworks/models/deepseek-v4-flash": {
-    "name": "DeepSeek V4 Flash",
+  "accounts/fireworks/models/deepseek-v3p1": {
+    "name": "DeepSeek V3.1",
     "reasoning": true,
+    "input": ["text"],
     "cost": {
-      "input": 0.14,
-      "output": 0.28,
-      "cacheRead": 0.03,
+      "input": 0.56,
+      "output": 1.68,
+      "cacheRead": 0,
       "cacheWrite": 0
     },
-    "maxTokens": 1048576,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/deepseek-v4-pro": {
-    "name": "DeepSeek V4 Pro",
-    "reasoning": true,
-    "maxTokens": 1048576,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/routers/deepseek-v4-pro": {
-    "name": "DeepSeek V4 Pro (router)",
-    "reasoning": true,
-    "cost": {
-      "input": 1.74,
-      "output": 3.48,
-      "cacheRead": 0.0145,
-      "cacheWrite": 0
-    },
-    "maxTokens": 1048576,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/routers/kimi-k2p5-fast": {
-    "name": "Kimi K2.5 Fast (router)",
-    "reasoning": true,
-    "cost": {
-      "input": 0.6,
-      "output": 3,
-      "cacheRead": 0.1,
-      "cacheWrite": 0
-    },
-    "input": [
-      "text",
-      "image",
-      "video"
-    ],
-    "maxTokens": 256000,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/routers/kimi-k2p6-turbo": {
-    "name": "Kimi K2.6 Turbo (router)",
-    "reasoning": true,
-    "cost": {
-      "input": 0.95,
-      "output": 4,
-      "cacheRead": 0.16,
-      "cacheWrite": 0
-    },
-    "input": [
-      "text",
-      "image"
-    ],
-    "maxTokens": 262144,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/glm-5p1": {
-    "name": "GLM 5.1",
-    "reasoning": true,
-    "cost": {
-      "input": 1.4,
-      "output": 4.4,
-      "cacheRead": 0.26,
-      "cacheWrite": 0
-    },
-    "maxTokens": 131072,
+    "contextWindow": 163840,
+    "maxTokens": 163840,
     "compat": {
       "supportsReasoningEffort": true
     }
@@ -89,27 +18,73 @@
   "accounts/fireworks/models/deepseek-v3p2": {
     "name": "DeepSeek V3.2",
     "reasoning": true,
+    "input": ["text"],
     "cost": {
       "input": 0.56,
       "output": 1.68,
       "cacheRead": 0.28,
       "cacheWrite": 0
     },
+    "contextWindow": 163840,
     "maxTokens": 160000,
     "compat": {
       "supportsReasoningEffort": true
     }
   },
-  "accounts/fireworks/models/minimax-m2p5": {
-    "name": "MiniMax-M2.5",
+  "accounts/fireworks/models/deepseek-v4-flash": {
+    "name": "DeepSeek V4 Flash",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
     "reasoning": true,
+    "input": ["text"],
     "cost": {
-      "input": 0.3,
-      "output": 1.2,
-      "cacheRead": 0.03,
+      "input": 0.14,
+      "output": 0.28,
+      "cacheRead": 0.028,
       "cacheWrite": 0
     },
-    "maxTokens": 196608,
+    "contextWindow": 1000000,
+    "maxTokens": 384000,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/models/deepseek-v4-pro": {
+    "name": "DeepSeek V4 Pro",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 1.74,
+      "output": 3.48,
+      "cacheRead": 0.145,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1000000,
+    "maxTokens": 384000,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/models/glm-4p5": {
+    "name": "GLM 4.5",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 0.55,
+      "output": 2.19,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 131072,
+    "maxTokens": 131072,
     "compat": {
       "supportsReasoningEffort": true
     }
@@ -117,98 +92,15 @@
   "accounts/fireworks/models/glm-4p5-air": {
     "name": "GLM 4.5 Air",
     "reasoning": true,
+    "input": ["text"],
     "cost": {
       "input": 0.22,
       "output": 0.88,
       "cacheRead": 0,
       "cacheWrite": 0
     },
+    "contextWindow": 131072,
     "maxTokens": 131072,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/glm-5": {
-    "name": "GLM 5",
-    "reasoning": true,
-    "cost": {
-      "input": 1,
-      "output": 3.2,
-      "cacheRead": 0.5,
-      "cacheWrite": 0
-    },
-    "maxTokens": 131072,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/deepseek-v3p1": {
-    "name": "DeepSeek V3.1",
-    "reasoning": true,
-    "cost": {
-      "input": 0.56,
-      "output": 1.68,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "maxTokens": 163840,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/kimi-k2-instruct": {
-    "name": "Kimi K2 Instruct",
-    "reasoning": false,
-    "cost": {
-      "input": 1,
-      "output": 3,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "maxTokens": 16384
-  },
-  "accounts/fireworks/models/qwen3p6-plus": {
-    "name": "Qwen 3.6 Plus",
-    "reasoning": true,
-    "cost": {
-      "input": 0.5,
-      "output": 3,
-      "cacheRead": 0.1,
-      "cacheWrite": 0
-    },
-    "input": [
-      "text",
-      "image"
-    ],
-    "maxTokens": 8192,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/minimax-m2p1": {
-    "name": "MiniMax-M2.1",
-    "reasoning": true,
-    "cost": {
-      "input": 0.3,
-      "output": 1.2,
-      "cacheRead": 0.03,
-      "cacheWrite": 0
-    },
-    "maxTokens": 200000,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/minimax-m2p7": {
-    "name": "MiniMax-M2.7",
-    "reasoning": true,
-    "cost": {
-      "input": 0.3,
-      "output": 1.2,
-      "cacheRead": 0.03,
-      "cacheWrite": 0
-    },
-    "maxTokens": 196608,
     "compat": {
       "supportsReasoningEffort": true
     }
@@ -216,27 +108,179 @@
   "accounts/fireworks/models/glm-4p7": {
     "name": "GLM 4.7",
     "reasoning": true,
+    "input": ["text"],
     "cost": {
       "input": 0.6,
       "output": 2.2,
       "cacheRead": 0.3,
       "cacheWrite": 0
     },
+    "contextWindow": 202752,
     "maxTokens": 198000,
     "compat": {
       "supportsReasoningEffort": true
     }
   },
-  "accounts/fireworks/models/glm-4p5": {
-    "name": "GLM 4.5",
+  "accounts/fireworks/models/glm-5": {
+    "name": "GLM 5",
     "reasoning": true,
+    "input": ["text"],
     "cost": {
-      "input": 0.55,
-      "output": 2.19,
+      "input": 1,
+      "output": 3.2,
+      "cacheRead": 0.5,
+      "cacheWrite": 0
+    },
+    "contextWindow": 202752,
+    "maxTokens": 131072,
+    "compat": {
+      "supportsReasoningEffort": true
+    }
+  },
+  "accounts/fireworks/models/glm-5p1": {
+    "name": "GLM 5.1",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 1.4,
+      "output": 4.4,
+      "cacheRead": 0.26,
+      "cacheWrite": 0
+    },
+    "contextWindow": 202800,
+    "maxTokens": 131072,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/models/glm-5p2": {
+    "name": "GLM 5.2",
+    "api": "openai-completions",
+    "baseUrl": "https://api.fireworks.ai/inference/v1",
+    "reasoning": true,
+    "thinkingLevelMap": {
+      "off": "none",
+      "minimal": null,
+      "low": "high",
+      "medium": "high",
+      "xhigh": "max"
+    },
+    "input": ["text"],
+    "cost": {
+      "input": 1.4,
+      "output": 4.4,
+      "cacheRead": 0.26,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048575,
+    "maxTokens": 131072,
+    "compat": {
+      "supportsStore": false,
+      "supportsDeveloperRole": false
+    }
+  },
+  "accounts/fireworks/models/gpt-oss-120b": {
+    "name": "GPT OSS 120B",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 0.15,
+      "output": 0.6,
+      "cacheRead": 0.015,
+      "cacheWrite": 0
+    },
+    "contextWindow": 131072,
+    "maxTokens": 32768,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/models/gpt-oss-20b": {
+    "name": "GPT OSS 20B",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 0.07,
+      "output": 0.3,
+      "cacheRead": 0.035,
+      "cacheWrite": 0
+    },
+    "contextWindow": 131072,
+    "maxTokens": 32768,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/models/gemma-4-26b-a4b-it": {
+    "name": "Gemma 4 26B A4B IT",
+    "reasoning": true,
+    "input": ["text", "image"],
+    "cost": {
+      "input": 0,
+      "output": 0,
       "cacheRead": 0,
       "cacheWrite": 0
     },
-    "maxTokens": 131072,
+    "contextWindow": 262000,
+    "compat": {
+      "supportsReasoningEffort": true
+    }
+  },
+  "accounts/fireworks/models/gemma-4-31b-it": {
+    "name": "Gemma 4 31B IT",
+    "reasoning": true,
+    "input": ["text", "image"],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262000,
+    "compat": {
+      "supportsReasoningEffort": true
+    }
+  },
+  "accounts/fireworks/models/kimi-k2-instruct": {
+    "name": "Kimi K2 Instruct",
+    "reasoning": false,
+    "input": ["text"],
+    "cost": {
+      "input": 1,
+      "output": 3,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 131072,
+    "maxTokens": 16384
+  },
+  "accounts/fireworks/models/kimi-k2-thinking": {
+    "name": "Kimi K2 Thinking",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 0.6,
+      "output": 2.5,
+      "cacheRead": 0.3,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262144,
+    "maxTokens": 256000,
     "compat": {
       "supportsReasoningEffort": true
     }
@@ -244,59 +288,14 @@
   "accounts/fireworks/models/kimi-k2p5": {
     "name": "Kimi K2.5",
     "reasoning": true,
+    "input": ["text", "image"],
     "cost": {
       "input": 0.6,
       "output": 3,
       "cacheRead": 0.1,
       "cacheWrite": 0
     },
-    "input": [
-      "text",
-      "image",
-      "video"
-    ],
-    "maxTokens": 256000,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/gpt-oss-20b": {
-    "name": "GPT OSS 20B",
-    "reasoning": true,
-    "cost": {
-      "input": 0.05,
-      "output": 0.2,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "maxTokens": 32768,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/gpt-oss-120b": {
-    "name": "GPT OSS 120B",
-    "reasoning": true,
-    "cost": {
-      "input": 0.15,
-      "output": 0.6,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "maxTokens": 32768,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/kimi-k2-thinking": {
-    "name": "Kimi K2 Thinking",
-    "reasoning": true,
-    "cost": {
-      "input": 0.6,
-      "output": 2.5,
-      "cacheRead": 0.3,
-      "cacheWrite": 0
-    },
+    "contextWindow": 262144,
     "maxTokens": 256000,
     "compat": {
       "supportsReasoningEffort": true
@@ -304,14 +303,243 @@
   },
   "accounts/fireworks/models/kimi-k2p6": {
     "name": "Kimi K2.6",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
     "reasoning": true,
+    "input": ["text", "image"],
     "cost": {
       "input": 0.95,
       "output": 4,
       "cacheRead": 0.16,
       "cacheWrite": 0
     },
-    "maxTokens": 262144,
+    "contextWindow": 262000,
+    "maxTokens": 262000,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/models/kimi-k2p7-code": {
+    "name": "Kimi K2.7 Code",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text", "image"],
+    "cost": {
+      "input": 0.95,
+      "output": 4,
+      "cacheRead": 0.19,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262000,
+    "maxTokens": 262000,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/models/minimax-m2p1": {
+    "name": "MiniMax-M2.1",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 0.3,
+      "output": 1.2,
+      "cacheRead": 0.03,
+      "cacheWrite": 0
+    },
+    "contextWindow": 196608,
+    "maxTokens": 200000,
+    "compat": {
+      "supportsReasoningEffort": true
+    }
+  },
+  "accounts/fireworks/models/minimax-m2p5": {
+    "name": "MiniMax-M2.5",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 0.3,
+      "output": 1.2,
+      "cacheRead": 0.03,
+      "cacheWrite": 0
+    },
+    "contextWindow": 196608,
+    "maxTokens": 196608,
+    "compat": {
+      "supportsReasoningEffort": true
+    }
+  },
+  "accounts/fireworks/models/minimax-m2p7": {
+    "name": "MiniMax-M2.7",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 0.3,
+      "output": 1.2,
+      "cacheRead": 0.06,
+      "cacheWrite": 0
+    },
+    "contextWindow": 196608,
+    "maxTokens": 196608,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/models/minimax-m3": {
+    "name": "MiniMax-M3",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 0.3,
+      "output": 1.2,
+      "cacheRead": 0.06,
+      "cacheWrite": 0
+    },
+    "contextWindow": 512000,
+    "maxTokens": 512000,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/models/qwen3p6-plus": {
+    "name": "Qwen 3.6 Plus",
+    "reasoning": true,
+    "input": ["text", "image"],
+    "cost": {
+      "input": 0.5,
+      "output": 3,
+      "cacheRead": 0.1,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262144,
+    "maxTokens": 8192,
+    "compat": {
+      "supportsReasoningEffort": true
+    }
+  },
+  "accounts/fireworks/models/qwen3p7-plus": {
+    "name": "Qwen 3.7 Plus",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text", "image"],
+    "cost": {
+      "input": 0.4,
+      "output": 1.6,
+      "cacheRead": 0.08,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262144,
+    "maxTokens": 65536,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/routers/deepseek-v4-pro": {
+    "name": "DeepSeek V4 Pro (router)",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 1.74,
+      "output": 3.48,
+      "cacheRead": 0.0145,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 1048576,
+    "compat": {
+      "supportsReasoningEffort": true
+    }
+  },
+  "accounts/fireworks/routers/glm-5-fast": {
+    "name": "GLM 5 Fast",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 1,
+      "output": 3.2,
+      "cacheRead": 0.5,
+      "cacheWrite": 0
+    },
+    "contextWindow": 202752,
+    "maxTokens": 131072,
+    "compat": {
+      "supportsReasoningEffort": true
+    }
+  },
+  "accounts/fireworks/routers/glm-5p1-fast": {
+    "name": "GLM 5.1 Fast",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 2.8,
+      "output": 8.8,
+      "cacheRead": 0.52,
+      "cacheWrite": 0
+    },
+    "contextWindow": 202800,
+    "maxTokens": 131072,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/routers/glm-5p2-fast": {
+    "name": "GLM 5.2 Fast",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text"],
+    "cost": {
+      "input": 2.1,
+      "output": 6.6,
+      "cacheRead": 0.21,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048575,
+    "maxTokens": 131072,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/routers/kimi-k2p5-fast": {
+    "name": "Kimi K2.5 Fast (router)",
+    "reasoning": true,
+    "input": ["text", "image"],
+    "cost": {
+      "input": 0.6,
+      "output": 3,
+      "cacheRead": 0.1,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262144,
+    "maxTokens": 256000,
     "compat": {
       "supportsReasoningEffort": true
     }
@@ -333,84 +561,93 @@
   "accounts/fireworks/routers/kimi-k2p6": {
     "name": "Kimi K2.6 (router)",
     "reasoning": true,
+    "input": ["text", "image"],
     "cost": {
       "input": 0.95,
       "output": 4,
       "cacheRead": 0.16,
       "cacheWrite": 0
     },
-    "input": [
-      "text",
-      "image"
-    ],
+    "contextWindow": 262144,
     "maxTokens": 262144,
     "compat": {
       "supportsReasoningEffort": true
     }
   },
-  "accounts/fireworks/routers/glm-5p1-fast": {
-    "name": "GLM 5.1 Fast (router)",
+  "accounts/fireworks/routers/kimi-k2p6-fast": {
+    "name": "Kimi K2.6 Fast",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
     "reasoning": true,
+    "input": ["text", "image"],
     "cost": {
-      "input": 1.4,
-      "output": 4.4,
-      "cacheRead": 0.26,
+      "input": 2,
+      "output": 8,
+      "cacheRead": 0.3,
       "cacheWrite": 0
     },
-    "maxTokens": 131072,
+    "contextWindow": 262000,
+    "maxTokens": 262000,
     "compat": {
-      "supportsReasoningEffort": true
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/routers/kimi-k2p6-turbo": {
+    "name": "Kimi K2.6 Turbo",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text", "image"],
+    "cost": {
+      "input": 2,
+      "output": 8,
+      "cacheRead": 0.3,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262000,
+    "maxTokens": 262000,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
+    }
+  },
+  "accounts/fireworks/routers/kimi-k2p7-code-fast": {
+    "name": "Kimi K2.7 Code Fast",
+    "api": "anthropic-messages",
+    "baseUrl": "https://api.fireworks.ai/inference",
+    "reasoning": true,
+    "input": ["text", "image"],
+    "cost": {
+      "input": 1.9,
+      "output": 8,
+      "cacheRead": 0.38,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262000,
+    "maxTokens": 262000,
+    "compat": {
+      "sendSessionAffinityHeaders": true,
+      "supportsEagerToolInputStreaming": false,
+      "supportsCacheControlOnTools": false,
+      "supportsLongCacheRetention": false
     }
   },
   "accounts/fireworks/routers/minimax-m2p7": {
     "name": "MiniMax M2.7 (router)",
     "reasoning": true,
+    "input": ["text"],
     "cost": {
       "input": 0.3,
       "output": 1.2,
       "cacheRead": 0.06,
       "cacheWrite": 0
     },
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/routers/glm-5-fast": {
-    "name": "GLM 5 Fast (router)",
-    "reasoning": true,
-    "cost": {
-      "input": 1,
-      "output": 3.2,
-      "cacheRead": 0.5,
-      "cacheWrite": 0
-    },
-    "maxTokens": 131072,
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/gemma-4-31b-it": {
-    "name": "Gemma 4 31B IT",
-    "reasoning": true,
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
-    "compat": {
-      "supportsReasoningEffort": true
-    }
-  },
-  "accounts/fireworks/models/gemma-4-26b-a4b-it": {
-    "name": "Gemma 4 26B A4B IT",
-    "reasoning": true,
-    "cost": {
-      "input": 0,
-      "output": 0,
-      "cacheRead": 0,
-      "cacheWrite": 0
-    },
+    "contextWindow": 204000,
     "compat": {
       "supportsReasoningEffort": true
     }

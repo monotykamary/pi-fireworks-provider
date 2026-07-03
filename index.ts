@@ -34,10 +34,15 @@ import path from "path";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type FireworksApi = "anthropic-messages" | "openai-completions";
+
 interface JsonModel {
   id: string;
   name: string;
+  api?: FireworksApi;
+  baseUrl?: string;
   reasoning: boolean;
+  thinkingLevelMap?: Record<string, string | null>;
   input: string[];
   cost: {
     input: number;
@@ -47,18 +52,17 @@ interface JsonModel {
   };
   contextWindow: number;
   maxTokens: number;
-  compat?: {
-    supportsDeveloperRole?: boolean;
-    supportsStore?: boolean;
-    maxTokensField?: "max_completion_tokens" | "max_tokens";
-    thinkingFormat?: "openai" | "zai" | "qwen" | "qwen-chat-template";
-    supportsReasoningEffort?: boolean;
-  };
+  // Loose on purpose: shape depends on `api` (OpenAICompletionsCompat vs
+  // AnthropicMessagesCompat). pi-ai validates at runtime.
+  compat?: Record<string, unknown>;
 }
 
 interface PatchEntry {
   name?: string;
+  api?: FireworksApi;
+  baseUrl?: string;
   reasoning?: boolean;
+  thinkingLevelMap?: Record<string, string | null>;
   input?: string[];
   cost?: {
     input?: number;
@@ -79,7 +83,10 @@ function applyPatch(model: JsonModel, patch: PatchEntry): JsonModel {
   const result = { ...model };
 
   if (patch.name !== undefined) result.name = patch.name;
+  if (patch.api !== undefined) result.api = patch.api;
+  if (patch.baseUrl !== undefined) result.baseUrl = patch.baseUrl;
   if (patch.reasoning !== undefined) result.reasoning = patch.reasoning;
+  if (patch.thinkingLevelMap !== undefined) result.thinkingLevelMap = patch.thinkingLevelMap;
   if (patch.input !== undefined) result.input = patch.input;
   if (patch.contextWindow !== undefined) result.contextWindow = patch.contextWindow;
   if (patch.maxTokens !== undefined) result.maxTokens = patch.maxTokens;
@@ -390,6 +397,7 @@ export default function (pi: ExtensionAPI) {
     const tools = payload.tools;
     if (Array.isArray(tools)) {
       payload.tools = tools.map((tool: any) => {
+        // OpenAI completions shape: tools[].function.parameters
         if (tool?.function?.parameters) {
           return {
             ...tool,
@@ -399,11 +407,19 @@ export default function (pi: ExtensionAPI) {
             },
           };
         }
+        // Anthropic messages shape: tools[].input_schema
+        if (tool?.input_schema) {
+          return {
+            ...tool,
+            input_schema: sanitizeSchemaForKimi(tool.input_schema),
+          };
+        }
         return tool;
       });
       modified = true;
     }
 
+    // OpenAI-only: the Anthropic Messages API has no response_format equivalent.
     const responseFormat = payload.response_format as any;
     if (responseFormat?.json_schema?.schema) {
       responseFormat.json_schema.schema = sanitizeSchemaForKimi(responseFormat.json_schema.schema);

@@ -4,7 +4,7 @@
 
 **31+ models through [Fireworks AI](https://fireworks.ai/)**
 
-_Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — unified OpenAI-compatible API for [pi](https://github.com/earendil-works/pi-coding-agent)._
+_Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — via Fireworks AI's Anthropic Messages and OpenAI-compatible endpoints for [pi](https://github.com/earendil-works/pi-coding-agent)._
 
 [![pi extension](https://img.shields.io/badge/pi-extension-blueviolet)](https://github.com/earendil-works/pi-coding-agent)
 [![license](https://img.shields.io/badge/license-MIT-blue)](./LICENSE)
@@ -16,7 +16,7 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — unified OpenAI-compatible API for [pi
 ## Features
 
 - **35+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
-- **Unified API** via Fireworks AI's OpenAI-compatible completions endpoint
+- **Dual API support** via Fireworks AI's Anthropic Messages and OpenAI-compatible completions endpoints (per-model routing, matching pi core's Fireworks provider)
 - **Cost Tracking** with per-model pricing for budget management
 - **Reasoning Models** support for advanced reasoning capabilities
 - **Vision Support** for image-capable models
