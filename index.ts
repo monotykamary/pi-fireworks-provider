@@ -589,6 +589,43 @@ function setPreserve(on: boolean): void {
 
 // ─── Extension Entry Point ────────────────────────────────────────────────────
 
+export {
+  applyPatch,
+  buildModels,
+  isChatModel,
+  transformApiModel,
+  mergeWithEmbedded,
+  loadStaleModels,
+  isFireworksKimiModel,
+  sanitizePattern,
+  sanitizeSchemaForKimi,
+  stripAnchorBleedInPlace,
+  isValidTier,
+  isValidKeybinding,
+  loadFireworksConfig,
+  readRawFireworksConfig,
+  writeRawFireworksConfig,
+  isPriorityApplicable,
+  PRIORITY_PRICING,
+  recomputePriorityCost,
+  replayTierState,
+  setTier,
+  updateTierStatus,
+  isPreserveEligible,
+  setPreserve,
+};
+
+export type {
+  JsonModel,
+  PatchEntry,
+  PatchData,
+  FireworksApi,
+  ServiceTier,
+  ServiceTierConfig,
+  PreserveThinkingConfig,
+  FireworksConfig,
+};
+
 export default function (pi: ExtensionAPI) {
   piRef = pi;
   const embeddedModels = modelsData as JsonModel[];

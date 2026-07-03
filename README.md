@@ -211,6 +211,18 @@ Add to your pi configuration for automatic loading:
 }
 ```
 
+## Development
+
+```bash
+pnpm install          # install dev tooling (vitest, knip, typescript)
+pnpm test             # run the test suite (vitest)
+pnpm run test:watch   # watch mode
+pnpm run lint:dead    # dead-code / unused-export scan (knip)
+pnpm run check        # typecheck (tsc) + tests + knip, all green or exit non-zero
+```
+
+Tests live in `tests/` and stub the `@earendil-works/pi-coding-agent` / `@earendil-works/pi-tui` peer dependencies (see `tests/__mocks__/`) so they run without the real pi packages installed. A per-run temp dir is used for `~/.pi/agent` (via `PI_CODING_AGENT_DIR` in `tests/vitest.setup.ts`) so config/cache reads and writes never touch your real environment.
+
 ## License
 
 MIT
