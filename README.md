@@ -18,6 +18,8 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — via Fireworks AI's Anthropic Messages
 - **35+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
 - **Dual API support** via Fireworks AI's Anthropic Messages and OpenAI-compatible completions endpoints (per-model routing, matching pi core's Fireworks provider)
 - **Service tiers** — toggle Fireworks `priority` vs `standard` per request on supported models (with priority pricing reflected in cost tracking), via a keybinding, `/fireworks-tier`, and a footer status area
+- **Preserved thinking** — toggle Fireworks' `reasoning_history: "preserved"` so prior assistant reasoning is retained across turns (better multi-turn recall; uses more tokens), via the `/fireworks-settings` panel, with a model-select notification. Matches neuralwatt/makora's settings-only UX, adapted to Fireworks' single global `reasoning_history` knob
+- **Settings panel** — `/fireworks-settings` (TUI) to configure preserved thinking, service tier, and display preferences; persisted to `~/.pi/agent/extensions/fireworks.json`
 - **Cost Tracking** with per-model pricing for budget management
 - **Reasoning Models** support for advanced reasoning capabilities
 - **Vision Support** for image-capable models
@@ -140,15 +142,34 @@ The selection is persisted per session (survives `/reload` and resume). When `pr
     "default": "standard",
     "keybinding": "ctrl+shift+l",
     "display": "statusbar"
+  },
+  "preserveThinking": {
+    "default": false
   }
 }
 ```
 
-- `default` — tier used until you toggle (`standard` | `priority`).
-- `keybinding` — any [pi key format](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/keybindings.md) (e.g. `ctrl+shift+l`, `ctrl+shift+k`). Requires `/reload` after changing. On macOS browser terminals (localterm), avoid `alt`/`ctrl+alt` (Option produces special chars) and `ctrl+shift+t/w/n/c/v` (browser/localterm tab + copy/paste shortcuts).
-- `display` — `statusbar` (footer status area) or `off` (hide the tier indicator).
+- `serviceTier.default` — tier used until you toggle (`standard` | `priority`).
+- `serviceTier.keybinding` — any [pi key format](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/keybindings.md) (e.g. `ctrl+shift+l`, `ctrl+shift+k`). Requires `/reload` after changing. On macOS browser terminals (localterm), avoid `alt`/`ctrl+alt` (Option produces special chars) and `ctrl+shift+t/w/n/c/v` (browser/localterm tab + copy/paste shortcuts).
+- `serviceTier.display` — `statusbar` (footer status area) or `off` (hide the tier indicator).
+- `preserveThinking.default` — whether `reasoning_history: "preserved"` is injected (`true` | `false`, default `false`). Also settable via `/fireworks-settings`.
 
 > **Note:** The OpenAI completions endpoint accepts `service_tier` directly (per Fireworks' API). The Anthropic Messages endpoint passes the top-level field through as an extra. If a supported Anthropic-routed model rejects it, file an issue so we can gate injection by API.
+
+## Preserved Thinking
+
+Fireworks exposes a top-level `reasoning_history` request parameter. The only accepted value is `"preserved"`; omitting it (the default) means prior assistant reasoning is **stripped** from the model's context each turn. Setting `reasoning_history: "preserved"` makes Fireworks render prior assistant reasoning into the model's context, improving multi-turn recall at the cost of extra tokens. See [the Fireworks reasoning guide](https://docs.fireworks.ai/guides/reasoning#preserved-thinking).
+
+This works on **both** transports — the OpenAI completions endpoint (assistant `reasoning_content` field) and the Anthropic Messages endpoint (assistant `thinking` content blocks, for which Fireworks returns a `signature` so pi-ai replays them). pi-ai already replays the reasoning field/block on prior assistant turns; this extension's only job is injecting the top-level `reasoning_history: "preserved"` flag that makes Fireworks honor it.
+
+Unlike neuralwatt/makora (which use per-model vLLM `chat_template_kwargs` flags like `preserve_thinking`/`clear_thinking`), Fireworks' knob is a single global parameter that applies to every reasoning model, so we expose it as one on/off toggle rather than a per-model submenu.
+
+**Toggle it:**
+
+- **`/fireworks-settings`** (TUI) → *Preserved thinking* → `on` / `off`. Takes effect immediately and persists as the default for future sessions.
+- A dim **model-select notification** tells you the current state when you switch to a Fireworks reasoning model (`Preserved thinking ON for …` / `… OFF for …`).
+
+Preserved thinking is **off by default** to match pi core and Fireworks' default (stripped). There is intentionally no `/fireworks-preserve` command or keybinding — it's settings-panel-only, mirroring neuralwatt/makora.
 
 ## Usage
 

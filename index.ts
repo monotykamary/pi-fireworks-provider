@@ -366,14 +366,21 @@ const PRIORITY_PRICING: Record<string, { input: number; output: number; cacheRea
 
 type ServiceTier = "standard" | "priority";
 
+type PreserveMode = boolean; // true = inject reasoning_history:"preserved"; false = default (stripped)
+
 interface ServiceTierConfig {
   default: ServiceTier;
   keybinding: string;
   display: "statusbar" | "off";
 }
 
+interface PreserveThinkingConfig {
+  default: PreserveMode;
+}
+
 interface FireworksConfig {
   serviceTier: ServiceTierConfig;
+  preserveThinking: PreserveThinkingConfig;
 }
 
 const FIREWORKS_CONFIG_PATH = path.join(getAgentDir(), "extensions", "fireworks.json");
@@ -384,21 +391,39 @@ const DEFAULT_SERVICE_TIER_CONFIG: ServiceTierConfig = {
   keybinding: "ctrl+shift+l",
   display: "statusbar",
 };
-const DEFAULT_FIREWORKS_CONFIG: FireworksConfig = { serviceTier: DEFAULT_SERVICE_TIER_CONFIG };
+// Preserved thinking is OFF by default to match pi core and Fireworks' default
+// (`reasoning_history` omitted = prior reasoning stripped). Opt in via the
+// /fireworks-settings panel (mirrors neuralwatt/makora: settings-only, no
+// command or keybinding).
+const DEFAULT_PRESERVE_CONFIG: PreserveThinkingConfig = {
+  default: false,
+};
+const DEFAULT_FIREWORKS_CONFIG: FireworksConfig = {
+  serviceTier: DEFAULT_SERVICE_TIER_CONFIG,
+  preserveThinking: DEFAULT_PRESERVE_CONFIG,
+};
 
 function isValidTier(v: unknown): v is ServiceTier {
   return v === "standard" || v === "priority";
+}
+
+function isValidKeybinding(v: unknown): v is string {
+  return typeof v === "string" && v.length > 0;
 }
 
 function loadFireworksConfig(): FireworksConfig {
   try {
     const raw = JSON.parse(fs.readFileSync(FIREWORKS_CONFIG_PATH, "utf8"));
     const st = raw?.serviceTier ?? {};
+    const pt = raw?.preserveThinking ?? {};
     return {
       serviceTier: {
         default: isValidTier(st.default) ? st.default : DEFAULT_SERVICE_TIER_CONFIG.default,
-        keybinding: typeof st.keybinding === "string" && st.keybinding.length > 0 ? st.keybinding : DEFAULT_SERVICE_TIER_CONFIG.keybinding,
+        keybinding: isValidKeybinding(st.keybinding) ? st.keybinding : DEFAULT_SERVICE_TIER_CONFIG.keybinding,
         display: st.display === "off" ? "off" : "statusbar",
+      },
+      preserveThinking: {
+        default: typeof pt.default === "boolean" ? pt.default : DEFAULT_PRESERVE_CONFIG.default,
       },
     };
   } catch {
@@ -409,7 +434,27 @@ function loadFireworksConfig(): FireworksConfig {
     } catch {
       // Write failure is non-fatal — defaults still work in memory.
     }
-    return { serviceTier: { ...DEFAULT_SERVICE_TIER_CONFIG } };
+    return { serviceTier: { ...DEFAULT_SERVICE_TIER_CONFIG }, preserveThinking: { ...DEFAULT_PRESERVE_CONFIG } };
+  }
+}
+
+// Read-modify-write the raw config JSON without re-validating, so unrelated
+// fields a user added survive a settings-UI write. `loadFireworksConfig()`
+// (validated) is still called after writing to refresh the in-memory config.
+function readRawFireworksConfig(): Record<string, any> {
+  try {
+    return JSON.parse(fs.readFileSync(FIREWORKS_CONFIG_PATH, "utf8"));
+  } catch {
+    return JSON.parse(JSON.stringify(DEFAULT_FIREWORKS_CONFIG));
+  }
+}
+
+function writeRawFireworksConfig(raw: Record<string, any>): void {
+  try {
+    fs.mkdirSync(path.dirname(FIREWORKS_CONFIG_PATH), { recursive: true });
+    fs.writeFileSync(FIREWORKS_CONFIG_PATH, JSON.stringify(raw, null, 2) + "\n");
+  } catch {
+    // Write failure is non-fatal — the in-memory refresh still applies.
   }
 }
 
@@ -508,6 +553,40 @@ function recomputePriorityCost(message: any): any {
   return { ...message, usage: { ...usage, cost } };
 }
 
+// ─── Preserved Thinking (reasoning_history) ──────────────────────────────────
+
+// Fireworks exposes a top-level `reasoning_history` request parameter. The
+// only accepted value is `"preserved"`; omitting it (or any other value)
+// means prior assistant reasoning is STRIPPED from the model's context
+// (verified by e2e: reasoning_content on an assistant message yields 0%
+// multi-turn recall without the flag, 100% with it). This works on BOTH
+// transports — the OpenAI completions endpoint (assistant `reasoning_content`
+// field) and the Anthropic Messages endpoint (assistant `thinking` content
+// block, which Firebooks returns a `signature` for so pi-ai replays it).
+//
+// Unlike neuralwatt/makora (which use per-model vLLM `chat_template_kwargs`
+// flags like preserve_thinking/clear_thinking), Fireworks' knob is a single
+// global top-level param that applies to every reasoning model. We expose it
+// as one on/off toggle. See https://docs.fireworks.ai/guides/reasoning#preserved-thinking.
+
+// A Fireworks model is preserve-eligible if it's a reasoning model. We read
+// `reasoning` off the registered model when available, but also accept a
+// truthy `reasoning` flag on ctx.model (pi-ai attaches it).
+function isPreserveEligible(model: any): boolean {
+  if (!model || model.provider !== "fireworks") return false;
+  return model.reasoning === true;
+}
+
+// Runtime state: whether preserved thinking is active. Initialized from the
+// config-file default at session_start (mirrors neuralwatt/makora, which drive
+// preserve state from the config file, not session entries) and updated by the
+// /fireworks-settings panel, which also persists the new default.
+let preserveOn: boolean = fireworksConfig.preserveThinking.default;
+
+function setPreserve(on: boolean): void {
+  preserveOn = on;
+}
+
 // ─── Extension Entry Point ────────────────────────────────────────────────────
 
 export default function (pi: ExtensionAPI) {
@@ -515,6 +594,29 @@ export default function (pi: ExtensionAPI) {
   const embeddedModels = modelsData as JsonModel[];
   const customModels = customModelsData as JsonModel[];
   const patches = patchData as PatchData;
+
+  // Deferred model_select notify timer — cleared on rapid re-switch and on
+  // session_shutdown so only the latest switch notifies. Mirrors neuralwatt's
+  // pattern so pi core's (and other extensions') notifications land first.
+  let modelSelectNotifyTimer: ReturnType<typeof setTimeout> | null = null;
+  const MODEL_SELECT_NOTIFY_DELAY_MS = 250;
+
+  // Notify preserved-thinking state for a Fireworks reasoning model. Deferred
+  // so pi core's notifications land first; cancelled on re-switch/shutdown so
+  // only the latest shows. Always level "info" — the text conveys the
+  // preserve/strip tradeoff, not a warning.
+  function notifyPreserveOnSelect(model: any, ctx: any): void {
+    if (!model || model.provider !== "fireworks") return;
+    if (!isPreserveEligible(model)) return;
+    const msg = preserveOn
+      ? `Preserved thinking ON for ${model.name || model.id} — full reasoning history retained across turns (better multi-turn recall; uses more tokens). Open /fireworks-settings to change.`
+      : `Preserved thinking OFF for ${model.name || model.id} — reasoning stripped each turn (Fireworks default; lighter, weaker multi-turn recall). Open /fireworks-settings to change.`;
+    if (modelSelectNotifyTimer) clearTimeout(modelSelectNotifyTimer);
+    modelSelectNotifyTimer = setTimeout(() => {
+      modelSelectNotifyTimer = null;
+      try { ctx.ui.notify(msg, "info"); } catch { /* notify is a no-op without a UI runner */ }
+    }, MODEL_SELECT_NOTIFY_DELAY_MS);
+  }
 
   const staleBase = loadStaleModels(embeddedModels);
   const staleModels = buildModels(staleBase, customModels, patches);
@@ -532,7 +634,9 @@ export default function (pi: ExtensionAPI) {
     const signal = revalidateAbort.signal;
     fireworksConfig = loadFireworksConfig();
     replayTierState(ctx, fireworksConfig.serviceTier.default);
+    preserveOn = fireworksConfig.preserveThinking.default;
     updateTierStatus(ctx);
+    notifyPreserveOnSelect(ctx.model, ctx);
     resolveApiKey(ctx.modelRegistry).then(() => {
       revalidateModels(cachedApiKey, embeddedModels, signal).then((freshBase) => {
         if (freshBase && !signal.aborted) {
@@ -550,6 +654,7 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_shutdown", (_event, ctx) => {
     revalidateAbort?.abort();
     try { ctx.ui.setStatus(TIER_STATUS_KEY, undefined); } catch {}
+    if (modelSelectNotifyTimer) { clearTimeout(modelSelectNotifyTimer); modelSelectNotifyTimer = null; }
   });
 
   // Sanitize JSON Schema patterns for Kimi models before sending to Fireworks.
@@ -573,6 +678,19 @@ export default function (pi: ExtensionAPI) {
     // passes it through as a top-level extra).
     if (currentTier === "priority" && isPriorityApplicable(model.id)) {
       payload.service_tier = "priority";
+      modified = true;
+    }
+
+    // Preserved thinking: inject top-level `reasoning_history: "preserved"`
+    // so Fireworks renders prior assistant reasoning (reasoning_content on the
+    // OpenAI endpoint, thinking blocks on the Anthropic endpoint) into the
+    // model's context instead of stripping it. The only accepted value is
+    // "preserved"; omitted = stripped (Fireworks default / pi core). Applies to
+    // any Fireworks reasoning model on both transports. pi-ai already replays
+    // the reasoning field/block on prior assistant turns; this flag is what
+    // makes Fireworks honor it. See https://docs.fireworks.ai/guides/reasoning.
+    if (preserveOn && isPreserveEligible(model)) {
+      payload.reasoning_history = "preserved";
       modified = true;
     }
 
@@ -623,9 +741,12 @@ export default function (pi: ExtensionAPI) {
     }
   });
 
-  // Refresh the tier status area when the active model changes.
-  pi.on("model_select", async (_event, ctx) => {
+  // Refresh the tier status area when the active model changes, and notify
+  // preserved-thinking state for the selected reasoning model (mirrors
+  // neuralwatt/makora: notification only, no preserve status area).
+  pi.on("model_select", async (event, ctx) => {
     updateTierStatus(ctx);
+    notifyPreserveOnSelect(event.model ?? ctx.model, ctx);
   });
 
   // Recompute finalized assistant-message cost against priority pricing so
@@ -670,6 +791,109 @@ export default function (pi: ExtensionAPI) {
       } else {
         toggleTier(ctx);
       }
+    },
+  });
+
+  // /fireworks-settings: TUI settings panel (mirrors /neuralwatt-settings &
+  // /makora-settings). Opens a SettingsList via ctx.ui.custom(). Toggles write
+  // to ~/.pi/agent/extensions/fireworks.json (raw read-modify-write so unknown
+  // fields survive) and refresh the in-memory config. Preserved thinking is
+  // settings-only (no command/keybinding), exactly like the siblings; the
+  // service-tier keybinding is load-time only, so keybinding changes need /reload.
+  pi.registerCommand("fireworks-settings", {
+    description: "Configure Fireworks: preserved thinking + service tier + display",
+    async handler(_args, ctx) {
+      if (ctx.mode !== "tui") {
+        ctx.ui.notify("/fireworks-settings requires TUI mode.", "error");
+        return;
+      }
+      const { SettingsList, Container } = await import("@earendil-works/pi-tui");
+      const { getSettingsListTheme, DynamicBorder } = await import("@earendil-works/pi-coding-agent");
+
+      await ctx.ui.custom((_tui, theme, _kb, done) => {
+        const border = () => new DynamicBorder((s: string) => theme.fg("border", s));
+
+        const items: any[] = [
+          {
+            id: "preserveThinking",
+            label: "Preserved thinking",
+            description: "Inject reasoning_history:\"preserved\" so Fireworks retains prior assistant reasoning across turns (better multi-turn recall; uses more tokens). Off = Fireworks default (stripped). Applies to every Fireworks reasoning model on both endpoints.",
+            currentValue: preserveOn ? "on" : "off",
+            values: ["on", "off"],
+          },
+          {
+            id: "serviceTier",
+            label: "Service tier",
+            description: "Fireworks service tier for supported models. priority = higher throughput / latency at ~1.2\u20131.5\u00d7 cost (priority pricing reflected in cost tracking). standard = default.",
+            currentValue: currentTier,
+            values: ["standard", "priority"],
+          },
+          {
+            id: "serviceTier.display",
+            label: "Service tier display",
+            description: "Where the \u201ctier: standard / \u26a1priority\u201d indicator is shown: footer status area or hidden",
+            currentValue: fireworksConfig.serviceTier.display,
+            values: ["statusbar", "off"],
+          },
+        ];
+
+        const container = new Container();
+        container.addChild(border());
+
+        const settingsList = new SettingsList(
+          items,
+          Math.min(items.length + 2, 15),
+          getSettingsListTheme(),
+          (id: string, newValue: string) => {
+            if (id === "preserveThinking") {
+              const on = newValue === "on";
+              setPreserve(on);
+              // Persist as the default too, so it survives new sessions.
+              const raw = readRawFireworksConfig();
+              raw.preserveThinking = { ...(raw.preserveThinking ?? {}), default: on };
+              writeRawFireworksConfig(raw);
+              fireworksConfig = loadFireworksConfig();
+              ctx.ui.notify(`Preserved thinking ${on ? "on" : "off"} \u2014 takes effect now.`, "info");
+            } else if (id === "serviceTier") {
+              let model: any;
+              try { model = ctx.model; } catch { model = undefined; }
+              if (!model || model.provider !== "fireworks" || !isPriorityApplicable(model.id)) {
+                ctx.ui.notify("Service tier only applies to supported Fireworks models.", "info");
+                return;
+              }
+              const tier = newValue as ServiceTier;
+              setTier(ctx, tier);
+              const raw = readRawFireworksConfig();
+              raw.serviceTier = { ...(raw.serviceTier ?? {}), default: tier };
+              writeRawFireworksConfig(raw);
+              fireworksConfig = loadFireworksConfig();
+              ctx.ui.notify(`Fireworks service tier: ${tier}`, "info");
+            } else if (id === "serviceTier.display") {
+              const raw = readRawFireworksConfig();
+              raw.serviceTier = { ...(raw.serviceTier ?? {}), display: newValue };
+              writeRawFireworksConfig(raw);
+              fireworksConfig = loadFireworksConfig();
+              updateTierStatus(ctx);
+            }
+          },
+          () => done(undefined),
+          { enableSearch: true },
+        );
+        container.addChild(settingsList);
+        container.addChild(border());
+
+        return {
+          render(width: number) {
+            return container.render(width);
+          },
+          invalidate() {
+            container.invalidate();
+          },
+          handleInput(data: string) {
+            settingsList.handleInput?.(data);
+          },
+        };
+      });
     },
   });
 }
