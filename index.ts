@@ -381,7 +381,7 @@ const TIER_ENTRY_TYPE = "fireworks-service-tier";
 const TIER_STATUS_KEY = "fireworks-tier";
 const DEFAULT_SERVICE_TIER_CONFIG: ServiceTierConfig = {
   default: "standard",
-  keybinding: "ctrl+alt+t",
+  keybinding: "ctrl+shift+l",
   display: "statusbar",
 };
 const DEFAULT_FIREWORKS_CONFIG: FireworksConfig = { serviceTier: DEFAULT_SERVICE_TIER_CONFIG };

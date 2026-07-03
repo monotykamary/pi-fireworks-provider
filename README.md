@@ -126,7 +126,7 @@ Fireworks exposes a `service_tier` request field (`standard` | `priority`) on it
 
 **Switching tiers:**
 
-- **Keybinding:** `ctrl+alt+t` (default) toggles `standard` ↔ `priority` for the active supported model. No-op with an info notice for unsupported models.
+- **Keybinding:** `ctrl+shift+l` (default) toggles `standard` ↔ `priority` for the active supported model. No-op with an info notice for unsupported models.
 - **Command:** `/fireworks-tier standard|priority|toggle`.
 - **Status area:** a dim `tier: standard` / `tier: ⚡priority` line is shown in the footer for supported models while a Fireworks model is active.
 
@@ -138,14 +138,14 @@ The selection is persisted per session (survives `/reload` and resume). When `pr
 {
   "serviceTier": {
     "default": "standard",
-    "keybinding": "ctrl+alt+t",
+    "keybinding": "ctrl+shift+l",
     "display": "statusbar"
   }
 }
 ```
 
 - `default` — tier used until you toggle (`standard` | `priority`).
-- `keybinding` — any [pi key format](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/keybindings.md) (e.g. `ctrl+alt+t`, `ctrl+shift+t`). Requires `/reload` after changing.
+- `keybinding` — any [pi key format](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/keybindings.md) (e.g. `ctrl+shift+l`, `ctrl+shift+k`). Requires `/reload` after changing. On macOS browser terminals (localterm), avoid `alt`/`ctrl+alt` (Option produces special chars) and `ctrl+shift+t/w/n/c/v` (browser/localterm tab + copy/paste shortcuts).
 - `display` — `statusbar` (footer status area) or `off` (hide the tier indicator).
 
 > **Note:** The OpenAI completions endpoint accepts `service_tier` directly (per Fireworks' API). The Anthropic Messages endpoint passes the top-level field through as an extra. If a supported Anthropic-routed model rejects it, file an issue so we can gate injection by API.
