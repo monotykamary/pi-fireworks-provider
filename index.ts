@@ -342,9 +342,176 @@ function stripAnchorBleedInPlace(obj: Record<string, unknown>): void {
   }
 }
 
+// ─── Service Tier (standard / priority) ──────────────────────────────────────
+
+// Fireworks exposes a `service_tier` request field ("standard" | "priority") on
+// its chat-completions endpoint. The priority tier trades higher per-token
+// pricing for higher throughput / lower latency on supported models. This is
+// orthogonal to the "fast" router model IDs (e.g. routers/...-fast), which are
+// separate models; priority applies to the base models below.
+//
+// Per-request priority pricing (USD per million tokens) from Fireworks' tier
+// reference. cacheWrite is not tiered (stays 0).
+const PRIORITY_PRICING: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
+  "accounts/fireworks/models/glm-5p2":          { input: 1.75, output: 5.5,  cacheRead: 0.175, cacheWrite: 0 },
+  "accounts/fireworks/models/kimi-k2p7-code":   { input: 1.43, output: 6,   cacheRead: 0.29,  cacheWrite: 0 },
+  "accounts/fireworks/models/minimax-m3":       { input: 0.45, output: 1.8,  cacheRead: 0.09,  cacheWrite: 0 },
+  "accounts/fireworks/models/deepseek-v4-pro":  { input: 2.61, output: 5.22, cacheRead: 0.218, cacheWrite: 0 },
+  "accounts/fireworks/models/kimi-k2p6":        { input: 1.5,  output: 6,   cacheRead: 0.22,  cacheWrite: 0 },
+  "accounts/fireworks/models/minimax-m2p7":    { input: 0.45, output: 1.8,  cacheRead: 0.09,  cacheWrite: 0 },
+  "accounts/fireworks/models/glm-5p1":         { input: 2.1,  output: 6.6,  cacheRead: 0.39,  cacheWrite: 0 },
+  "accounts/fireworks/models/gpt-oss-120b":     { input: 0.18, output: 0.72, cacheRead: 0.018, cacheWrite: 0 },
+  "accounts/fireworks/models/deepseek-v4-flash":{ input: 0.21, output: 0.42, cacheRead: 0.045, cacheWrite: 0 },
+};
+
+type ServiceTier = "standard" | "priority";
+
+interface ServiceTierConfig {
+  default: ServiceTier;
+  keybinding: string;
+  display: "statusbar" | "off";
+}
+
+interface FireworksConfig {
+  serviceTier: ServiceTierConfig;
+}
+
+const FIREWORKS_CONFIG_PATH = path.join(getAgentDir(), "extensions", "fireworks.json");
+const TIER_ENTRY_TYPE = "fireworks-service-tier";
+const TIER_STATUS_KEY = "fireworks-tier";
+const DEFAULT_SERVICE_TIER_CONFIG: ServiceTierConfig = {
+  default: "standard",
+  keybinding: "ctrl+shift+t",
+  display: "statusbar",
+};
+const DEFAULT_FIREWORKS_CONFIG: FireworksConfig = { serviceTier: DEFAULT_SERVICE_TIER_CONFIG };
+
+function isValidTier(v: unknown): v is ServiceTier {
+  return v === "standard" || v === "priority";
+}
+
+function loadFireworksConfig(): FireworksConfig {
+  try {
+    const raw = JSON.parse(fs.readFileSync(FIREWORKS_CONFIG_PATH, "utf8"));
+    const st = raw?.serviceTier ?? {};
+    return {
+      serviceTier: {
+        default: isValidTier(st.default) ? st.default : DEFAULT_SERVICE_TIER_CONFIG.default,
+        keybinding: typeof st.keybinding === "string" && st.keybinding.length > 0 ? st.keybinding : DEFAULT_SERVICE_TIER_CONFIG.keybinding,
+        display: st.display === "off" ? "off" : "statusbar",
+      },
+    };
+  } catch {
+    // Config missing or invalid — write defaults so the user can discover it.
+    try {
+      fs.mkdirSync(path.dirname(FIREWORKS_CONFIG_PATH), { recursive: true });
+      fs.writeFileSync(FIREWORKS_CONFIG_PATH, JSON.stringify(DEFAULT_FIREWORKS_CONFIG, null, 2) + "\n");
+    } catch {
+      // Write failure is non-fatal — defaults still work in memory.
+    }
+    return { serviceTier: { ...DEFAULT_SERVICE_TIER_CONFIG } };
+  }
+}
+
+let fireworksConfig = loadFireworksConfig();
+
+// Held so module-scope helpers (setTier) can call pi.appendEntry.
+let piRef: ExtensionAPI | null = null;
+
+function isPriorityApplicable(id: string | undefined): boolean {
+  return !!id && Object.prototype.hasOwnProperty.call(PRIORITY_PRICING, id);
+}
+
+// Session state: the active service tier. Replayed from session entries on
+// session_start so it survives reload / resume.
+let currentTier: ServiceTier = fireworksConfig.serviceTier.default;
+
+function replayTierState(ctx: any, defaultTier: ServiceTier): void {
+  let tier: ServiceTier = defaultTier;
+  for (const entry of ctx.sessionManager.getBranch()) {
+    if (entry?.type === "custom" && entry.customType === TIER_ENTRY_TYPE && entry.data) {
+      const t = entry.data.tier;
+      if (isValidTier(t)) tier = t;
+    }
+  }
+  currentTier = tier;
+}
+
+function updateTierStatus(ctx: any): void {
+  if (fireworksConfig.serviceTier.display === "off") {
+    ctx.ui.setStatus(TIER_STATUS_KEY, undefined);
+    return;
+  }
+  let model: any;
+  try {
+    model = ctx.model;
+  } catch {
+    model = undefined;
+  }
+  if (!model || model.provider !== "fireworks" || !isPriorityApplicable(model.id)) {
+    ctx.ui.setStatus(TIER_STATUS_KEY, undefined);
+    return;
+  }
+  const label = currentTier === "priority" ? "tier: ⚡priority" : "tier: standard";
+  try {
+    ctx.ui.setStatus(TIER_STATUS_KEY, ctx.ui.theme.fg("dim", label));
+  } catch {
+    // setStatus / theme are no-ops without a UI runner.
+  }
+}
+
+function setTier(ctx: any, tier: ServiceTier): void {
+  currentTier = tier;
+  try {
+    piRef?.appendEntry(TIER_ENTRY_TYPE, { tier });
+  } catch {
+    // appendEntry outside a session context is non-fatal.
+  }
+  updateTierStatus(ctx);
+}
+
+function toggleTier(ctx: any): void {
+  let model: any;
+  try {
+    model = ctx.model;
+  } catch {
+    model = undefined;
+  }
+  if (!model || model.provider !== "fireworks") {
+    try { ctx.ui.notify("Fireworks service tier only applies to Fireworks models.", "info"); } catch {}
+    return;
+  }
+  if (!isPriorityApplicable(model.id)) {
+    try { ctx.ui.notify(`Service tier is not available for ${model.name || model.id}.`, "info"); } catch {}
+    return;
+  }
+  const next: ServiceTier = currentTier === "priority" ? "standard" : "priority";
+  setTier(ctx, next);
+  try { ctx.ui.notify(`Fireworks service tier: ${next}`, "info"); } catch {}
+}
+
+// Recompute a finalized assistant message's cost against priority pricing so
+// cost tracking reflects the premium tier instead of the model's base cost.
+function recomputePriorityCost(message: any): any {
+  const pricing = message?.model ? PRIORITY_PRICING[message.model] : undefined;
+  if (!pricing) return undefined;
+  const usage = message?.usage;
+  if (!usage) return undefined;
+  const cost = {
+    input: (pricing.input / 1_000_000) * (usage.input || 0),
+    output: (pricing.output / 1_000_000) * (usage.output || 0),
+    cacheRead: (pricing.cacheRead / 1_000_000) * (usage.cacheRead || 0),
+    cacheWrite: 0,
+    total: 0,
+  };
+  cost.total = cost.input + cost.output + cost.cacheRead + cost.cacheWrite;
+  return { ...message, usage: { ...usage, cost } };
+}
+
 // ─── Extension Entry Point ────────────────────────────────────────────────────
 
 export default function (pi: ExtensionAPI) {
+  piRef = pi;
   const embeddedModels = modelsData as JsonModel[];
   const customModels = customModelsData as JsonModel[];
   const patches = patchData as PatchData;
@@ -363,6 +530,9 @@ export default function (pi: ExtensionAPI) {
     revalidateAbort?.abort();
     revalidateAbort = new AbortController();
     const signal = revalidateAbort.signal;
+    fireworksConfig = loadFireworksConfig();
+    replayTierState(ctx, fireworksConfig.serviceTier.default);
+    updateTierStatus(ctx);
     resolveApiKey(ctx.modelRegistry).then(() => {
       revalidateModels(cachedApiKey, embeddedModels, signal).then((freshBase) => {
         if (freshBase && !signal.aborted) {
@@ -377,8 +547,9 @@ export default function (pi: ExtensionAPI) {
     });
   });
 
-  pi.on("session_shutdown", () => {
+  pi.on("session_shutdown", (_event, ctx) => {
     revalidateAbort?.abort();
+    try { ctx.ui.setStatus(TIER_STATUS_KEY, undefined); } catch {}
   });
 
   // Sanitize JSON Schema patterns for Kimi models before sending to Fireworks.
@@ -387,43 +558,52 @@ export default function (pi: ExtensionAPI) {
   // present. We strip anchors from simple patterns and drop patterns that
   // combine alternation with anchors entirely.
   pi.on("before_provider_request", (event, ctx) => {
-    if (!isFireworksKimiModel(ctx.model)) return;
+    const model = ctx.model;
+    if (!model || model.provider !== "fireworks") return;
 
     const payload = event.payload as Record<string, unknown>;
     if (!payload || typeof payload !== "object") return;
 
     let modified = false;
 
-    const tools = payload.tools;
-    if (Array.isArray(tools)) {
-      payload.tools = tools.map((tool: any) => {
-        // OpenAI completions shape: tools[].function.parameters
-        if (tool?.function?.parameters) {
-          return {
-            ...tool,
-            function: {
-              ...tool.function,
-              parameters: sanitizeSchemaForKimi(tool.function.parameters),
-            },
-          };
-        }
-        // Anthropic messages shape: tools[].input_schema
-        if (tool?.input_schema) {
-          return {
-            ...tool,
-            input_schema: sanitizeSchemaForKimi(tool.input_schema),
-          };
-        }
-        return tool;
-      });
+    // Service tier: inject `service_tier` on supported Fireworks models when
+    // priority is selected. Injected at the top level of both the OpenAI
+    // completions and Anthropic Messages request bodies (Fireworks accepts the
+    // field on its chat-completions endpoint; the Anthropic-compatible endpoint
+    // passes it through as a top-level extra).
+    if (currentTier === "priority" && isPriorityApplicable(model.id)) {
+      payload.service_tier = "priority";
       modified = true;
     }
 
-    // OpenAI-only: the Anthropic Messages API has no response_format equivalent.
-    const responseFormat = payload.response_format as any;
-    if (responseFormat?.json_schema?.schema) {
-      responseFormat.json_schema.schema = sanitizeSchemaForKimi(responseFormat.json_schema.schema);
-      modified = true;
+    // Kimi anchor-bleed sanitization (Kimi K2.x pattern bug). Only applies to
+    // Kimi models, but a single request can be both Kimi and priority-tiered.
+    if (isFireworksKimiModel(model)) {
+      const tools = payload.tools;
+      if (Array.isArray(tools)) {
+        payload.tools = tools.map((tool: any) => {
+          // OpenAI completions shape: tools[].function.parameters
+          if (tool?.function?.parameters) {
+            return {
+              ...tool,
+              function: { ...tool.function, parameters: sanitizeSchemaForKimi(tool.function.parameters) },
+            };
+          }
+          // Anthropic messages shape: tools[].input_schema
+          if (tool?.input_schema) {
+            return { ...tool, input_schema: sanitizeSchemaForKimi(tool.input_schema) };
+          }
+          return tool;
+        });
+        modified = true;
+      }
+
+      // OpenAI-only: the Anthropic Messages API has no response_format equivalent.
+      const responseFormat = payload.response_format as any;
+      if (responseFormat?.json_schema?.schema) {
+        responseFormat.json_schema.schema = sanitizeSchemaForKimi(responseFormat.json_schema.schema);
+        modified = true;
+      }
     }
 
     if (modified) {
@@ -441,5 +621,55 @@ export default function (pi: ExtensionAPI) {
     if (input && typeof input === "object") {
       stripAnchorBleedInPlace(input);
     }
+  });
+
+  // Refresh the tier status area when the active model changes.
+  pi.on("model_select", async (_event, ctx) => {
+    updateTierStatus(ctx);
+  });
+
+  // Recompute finalized assistant-message cost against priority pricing so
+  // usage/cost reflects the premium tier rather than the model's base cost.
+  // message_end fires for user, assistant, and toolResult messages; we only
+  // touch assistant messages, and only when priority is active for that model.
+  pi.on("message_end", async (event, _ctx) => {
+    if (currentTier !== "priority") return;
+    const message = (event as any).message;
+    if (!message || message.role !== "assistant") return;
+    const replaced = recomputePriorityCost(message);
+    if (replaced) {
+      return { message: replaced };
+    }
+  });
+
+  // Keybinding: toggle the service tier for the active Fireworks model.
+  pi.registerShortcut(fireworksConfig.serviceTier.keybinding, {
+    description: "Toggle Fireworks service tier (standard / priority)",
+    handler: async (ctx) => {
+      toggleTier(ctx);
+    },
+  });
+
+  // Command form (non-TUI use, or explicit setting): /fireworks-tier [standard|priority|toggle]
+  pi.registerCommand("fireworks-tier", {
+    description: "Set Fireworks service tier: standard | priority | toggle (default)",
+    handler: async (args, ctx) => {
+      const arg = (args || "").trim().toLowerCase();
+      let model: any;
+      try { model = ctx.model; } catch { model = undefined; }
+      if (!model || model.provider !== "fireworks" || !isPriorityApplicable(model.id)) {
+        try { ctx.ui.notify("Fireworks service tier only applies to supported Fireworks models.", "info"); } catch {}
+        return;
+      }
+      if (arg === "priority") {
+        setTier(ctx, "priority");
+        try { ctx.ui.notify("Fireworks service tier: priority", "info"); } catch {}
+      } else if (arg === "standard") {
+        setTier(ctx, "standard");
+        try { ctx.ui.notify("Fireworks service tier: standard", "info"); } catch {}
+      } else {
+        toggleTier(ctx);
+      }
+    },
   });
 }

@@ -17,6 +17,7 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — via Fireworks AI's Anthropic Messages
 
 - **35+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
 - **Dual API support** via Fireworks AI's Anthropic Messages and OpenAI-compatible completions endpoints (per-model routing, matching pi core's Fireworks provider)
+- **Service tiers** — toggle Fireworks `priority` vs `standard` per request on supported models (with priority pricing reflected in cost tracking), via a keybinding, `/fireworks-tier`, and a footer status area
 - **Cost Tracking** with per-model pricing for budget management
 - **Reasoning Models** support for advanced reasoning capabilities
 - **Vision Support** for image-capable models
@@ -104,6 +105,50 @@ pi
 | Qwen3 VL 30B A3B Instruct | Text + Image | 262K | 0 | Free | Free |
 | Qwen3 VL 30B A3B Thinking | Text + Image | 262K | 0 | Free | Free |
 *Costs are per million tokens. Prices subject to change - check [fireworks.ai](https://fireworks.ai) for current pricing.*
+
+## Service Tiers
+
+Fireworks exposes a `service_tier` request field (`standard` | `priority`) on its chat-completions endpoint. The **priority** tier trades higher per-token pricing for higher throughput / lower latency. This is orthogonal to the `-fast`/`-turbo` router model IDs (which are separate models) — service tiers apply to the base models below.
+
+| Model | Priority Uncached Input | Priority Cached Input | Priority Output |
+| --- | --- | --- | --- |
+| GLM 5.2 | $1.75/M | $0.175/M | $5.5/M |
+| Kimi K2.7 Code | $1.43/M | $0.29/M | $6/M |
+| Minimax M3 | $0.45/M | $0.09/M | $1.8/M |
+| DeepSeek V4 Pro | $2.61/M | $0.218/M | $5.22/M |
+| Kimi K2.6 | $1.5/M | $0.22/M | $6/M |
+| MiniMax M2.7 | $0.45/M | $0.09/M | $1.8/M |
+| GLM 5.1 | $2.1/M | $0.39/M | $6.6/M |
+| GPT OSS 120B | $0.18/M | $0.018/M | $0.72/M |
+| DeepSeek V4 Flash | $0.21/M | $0.045/M | $0.42/M |
+
+*Priority pricing is roughly 1.2–1.5× the standard rate. `cacheWrite` is not tiered.*
+
+**Switching tiers:**
+
+- **Keybinding:** `ctrl+shift+t` (default) toggles `standard` ↔ `priority` for the active supported model. No-op with an info notice for unsupported models.
+- **Command:** `/fireworks-tier standard|priority|toggle`.
+- **Status area:** a dim `tier: standard` / `tier: ⚡priority` line is shown in the footer for supported models while a Fireworks model is active.
+
+The selection is persisted per session (survives `/reload` and resume). When `priority` is active, `service_tier: "priority"` is injected into every request and finalized cost is recomputed against the priority rates above.
+
+**Configuration** — `~/.pi/agent/extensions/fireworks.json` (created with defaults on first load):
+
+```json
+{
+  "serviceTier": {
+    "default": "standard",
+    "keybinding": "ctrl+shift+t",
+    "display": "statusbar"
+  }
+}
+```
+
+- `default` — tier used until you toggle (`standard` | `priority`).
+- `keybinding` — any [pi key format](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/keybindings.md) (e.g. `ctrl+shift+t`, `alt+t`). Requires `/reload` after changing.
+- `display` — `statusbar` (footer status area) or `off` (hide the tier indicator).
+
+> **Note:** The OpenAI completions endpoint accepts `service_tier` directly (per Fireworks' API). The Anthropic Messages endpoint passes the top-level field through as an extra. If a supported Anthropic-routed model rejects it, file an issue so we can gate injection by API.
 
 ## Usage
 
