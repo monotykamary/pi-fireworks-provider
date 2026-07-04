@@ -15,7 +15,7 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — via Fireworks AI's Anthropic Messages
 
 ## Features
 
-- **35+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
+- **39+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
 - **Dual API support** via Fireworks AI's Anthropic Messages and OpenAI-compatible completions endpoints (per-model routing, matching pi core's Fireworks provider)
 - **Service tiers** — toggle Fireworks `priority` vs `standard` per request on supported models (with priority pricing reflected in cost tracking), via a keybinding, `/fireworks-tier`, and a footer status area
 - **Preserved thinking** — toggle Fireworks' `reasoning_history: "preserved"` so prior assistant reasoning is retained across turns (better multi-turn recall; uses more tokens), via the `/fireworks-settings` panel, with a model-select notification. Matches neuralwatt/makora's settings-only UX, adapted to Fireworks' single global `reasoning_history` knob
@@ -73,8 +73,8 @@ pi
 |-------|------|---------|------------|------------|-------------|
 | DeepSeek V3.1 | Text | 164K | 164K | $0.56 | $1.68 |
 | DeepSeek V3.2 | Text | 164K | 160K | $0.56 | $1.68 |
-| DeepSeek V4 Flash | Text | 1.0M | 1.0M | $0.14 | $0.28 |
-| DeepSeek V4 Pro | Text | 1.0M | 1.0M | Free | Free |
+| DeepSeek V4 Flash | Text | 1.0M | 384K | $0.14 | $0.28 |
+| DeepSeek V4 Pro | Text | 1.0M | 384K | $1.74 | $3.48 |
 | DeepSeek V4 Pro (router) | Text | 1.0M | 1.0M | $1.74 | $3.48 |
 | Gemma 4 26B A4B IT | Text + Image | 262K | 0 | Free | Free |
 | Gemma 4 31B IT | Text + Image | 262K | 0 | Free | Free |
@@ -82,27 +82,31 @@ pi
 | GLM 4.5 Air | Text | 131K | 131K | $0.22 | $0.88 |
 | GLM 4.7 | Text | 203K | 198K | $0.60 | $2.20 |
 | GLM 5 | Text | 203K | 131K | $1.00 | $3.20 |
-| GLM 5 Fast (router) | Text | 203K | 131K | $1.00 | $3.20 |
+| GLM 5 Fast | Text | 203K | 131K | $1.00 | $3.20 |
 | GLM 5.1 | Text | 203K | 131K | $1.40 | $4.40 |
-| GLM 5.1 Fast (router) | Text | 203K | 131K | $1.40 | $4.40 |
-| GLM 5.2 | Text | 1.0M | 0 | Free | Free |
+| GLM 5.1 Fast | Text | 203K | 131K | $2.80 | $8.80 |
+| GLM 5.2 | Text | 1.0M | 131K | $1.40 | $4.40 |
+| GLM 5.2 Fast | Text | 1.0M | 131K | $2.10 | $6.60 |
 | GPT OSS 120B | Text | 131K | 33K | $0.15 | $0.60 |
-| GPT OSS 20B | Text | 131K | 33K | $0.05 | $0.20 |
+| GPT OSS 20B | Text | 131K | 33K | $0.07 | $0.30 |
 | Kimi K2 Instruct | Text | 131K | 16K | $1.00 | $3.00 |
 | Kimi K2 Thinking | Text | 262K | 256K | $0.60 | $2.50 |
 | Kimi K2.5 | Text + Image | 262K | 256K | $0.60 | $3.00 |
 | Kimi K2.5 Fast (router) | Text + Image | 262K | 256K | $0.60 | $3.00 |
 | Kimi K2.6 | Text + Image | 262K | 262K | $0.95 | $4.00 |
 | Kimi K2.6 (router) | Text + Image | 262K | 262K | $0.95 | $4.00 |
-| Kimi K2.6 Turbo (router) | Text + Image | 262K | 262K | $0.95 | $4.00 |
-| Kimi K2.7 Code | Text + Image | 262K | 0 | Free | Free |
+| Kimi K2.6 Fast | Text + Image | 262K | 262K | $2.00 | $8.00 |
+| Kimi K2.6 Turbo | Text + Image | 262K | 262K | $2.00 | $8.00 |
+| Kimi K2.7 Code | Text + Image | 262K | 262K | $0.95 | $4.00 |
+| Kimi K2.7 Code Fast | Text + Image | 262K | 262K | $1.90 | $8.00 |
 | Llama 3.3 70B Instruct | Text | 131K | 0 | Free | Free |
 | MiniMax M2.7 (router) | Text | 204K | 0 | $0.30 | $1.20 |
-| Minimax M3 | Text + Image | 512K | 0 | Free | Free |
 | MiniMax-M2.1 | Text | 197K | 200K | $0.30 | $1.20 |
 | MiniMax-M2.5 | Text | 197K | 197K | $0.30 | $1.20 |
 | MiniMax-M2.7 | Text | 197K | 197K | $0.30 | $1.20 |
+| MiniMax-M3 | Text | 512K | 512K | $0.30 | $1.20 |
 | NVIDIA Nemotron 3 Ultra NVFP4 | Text | 262K | 0 | Free | Free |
+| Qwen 3.7 Plus | Text + Image | 262K | 66K | $0.40 | $1.60 |
 | Qwen3 8B | Text | 41K | 0 | Free | Free |
 | Qwen3 VL 30B A3B Instruct | Text + Image | 262K | 0 | Free | Free |
 | Qwen3 VL 30B A3B Thinking | Text + Image | 262K | 0 | Free | Free |
