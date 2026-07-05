@@ -25,6 +25,7 @@ const CONFIG_DIR = path.dirname(CONFIG_PATH);
 const DEFAULT_CONFIG = {
   serviceTier: { default: "standard", keybinding: "ctrl+shift+l", display: "statusbar" },
   preserveThinking: { default: false },
+  logitBias: { enabled: false, biases: {} },
 };
 
 beforeEach(() => {
@@ -102,6 +103,7 @@ describe("loadFireworksConfig", () => {
     expect(loadFireworksConfig()).toEqual({
       serviceTier: { default: "priority", keybinding: "ctrl+alt+t", display: "off" },
       preserveThinking: { default: true },
+      logitBias: { enabled: false, biases: {} },
     });
   });
 

@@ -26,6 +26,7 @@
  */
 
 import { getAgentDir, type ExtensionAPI, type ModelRegistry } from "@earendil-works/pi-coding-agent";
+import type { Input, matchesKey, Key, truncateToWidth, visibleWidth, wrapTextWithAnsi, fuzzyFilter, SettingsListTheme } from "@earendil-works/pi-tui";
 import modelsData from "./models.json" with { type: "json" };
 import customModelsData from "./custom-models.json" with { type: "json" };
 import patchData from "./patch.json" with { type: "json" };
@@ -378,9 +379,21 @@ interface PreserveThinkingConfig {
   default: PreserveMode;
 }
 
+// Logit bias: an OpenAI-style map of token ID → bias (-100..100), forwarded
+// verbatim as the top-level `logit_bias` request field on Fireworks'
+// OpenAI-compatible completions endpoint. Token IDs are tokenizer-specific
+// (the caller must match the model's tokenizer). Disabled by default; an empty
+// map or enabled=false means no injection. String-keyed so it serializes 1:1
+// to the wire format.
+interface LogitBiasConfig {
+  enabled: boolean;
+  biases: Record<string, number>;
+}
+
 interface FireworksConfig {
   serviceTier: ServiceTierConfig;
   preserveThinking: PreserveThinkingConfig;
+  logitBias: LogitBiasConfig;
 }
 
 const FIREWORKS_CONFIG_PATH = path.join(getAgentDir(), "extensions", "fireworks.json");
@@ -398,9 +411,14 @@ const DEFAULT_SERVICE_TIER_CONFIG: ServiceTierConfig = {
 const DEFAULT_PRESERVE_CONFIG: PreserveThinkingConfig = {
   default: false,
 };
+const DEFAULT_LOGIT_BIAS_CONFIG: LogitBiasConfig = {
+  enabled: false,
+  biases: {},
+};
 const DEFAULT_FIREWORKS_CONFIG: FireworksConfig = {
   serviceTier: DEFAULT_SERVICE_TIER_CONFIG,
   preserveThinking: DEFAULT_PRESERVE_CONFIG,
+  logitBias: DEFAULT_LOGIT_BIAS_CONFIG,
 };
 
 function isValidTier(v: unknown): v is ServiceTier {
@@ -411,11 +429,63 @@ function isValidKeybinding(v: unknown): v is string {
   return typeof v === "string" && v.length > 0;
 }
 
+// A valid logit-bias value: integer in [-100, 100]. -100 effectively bans the
+// token (sets its logit to -inf on Fireworks / vLLM); other values shift the
+// logit additively before sampling (per OpenAI / Fireworks semantics).
+function isValidBiasValue(v: unknown): v is number {
+  return typeof v === "number" && Number.isInteger(v) && v >= -100 && v <= 100;
+}
+
+// Validate the logit_bias map (tokenId-string → bias). Keys must be pure
+// non-negative-integer strings ("1", "007"); they're normalized to canonical
+// "String(parseInt)" keys. Invalid keys / values are dropped silently so a
+// malformed config can't crash model registration. Rejects "1.5", "-1", "abc".
+function parseLogitBiasMap(raw: unknown): Record<string, number> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  const result: Record<string, number> = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (!/^\d+$/.test(key)) continue;
+    const tokenId = Number.parseInt(key, 10);
+    if (!Number.isInteger(tokenId) || tokenId < 0) continue;
+    if (!isValidBiasValue(value)) continue;
+    result[String(tokenId)] = value;
+  }
+  return result;
+}
+
+// Validate the `logitBias` config object. Non-object / array → defaults.
+function parseLogitBiasConfig(raw: unknown): LogitBiasConfig {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return { enabled: false, biases: {} };
+  }
+  const lb = raw as Record<string, unknown>;
+  return {
+    enabled: lb.enabled === true,
+    biases: parseLogitBiasMap(lb.biases),
+  };
+}
+
+// Strict integer parse for user-typed logit-bias inputs. Rejects decimals
+// ("1.5"), signs ("+5"), empty, and non-numeric strings — Number.parseInt
+// would silently truncate those, masking typos. Used by the TUI editor.
+function parseTokenIdInput(raw: string): number | null {
+  if (!/^\d+$/.test(raw)) return null;
+  const n = Number.parseInt(raw, 10);
+  return Number.isInteger(n) && n >= 0 ? n : null;
+}
+
+function parseBiasInput(raw: string): number | null {
+  if (!/^-?\d+$/.test(raw)) return null;
+  const n = Number.parseInt(raw, 10);
+  return Number.isInteger(n) && n >= -100 && n <= 100 ? n : null;
+}
+
 function loadFireworksConfig(): FireworksConfig {
   try {
     const raw = JSON.parse(fs.readFileSync(FIREWORKS_CONFIG_PATH, "utf8"));
     const st = raw?.serviceTier ?? {};
     const pt = raw?.preserveThinking ?? {};
+    const lb = raw?.logitBias ?? {};
     return {
       serviceTier: {
         default: isValidTier(st.default) ? st.default : DEFAULT_SERVICE_TIER_CONFIG.default,
@@ -425,6 +495,7 @@ function loadFireworksConfig(): FireworksConfig {
       preserveThinking: {
         default: typeof pt.default === "boolean" ? pt.default : DEFAULT_PRESERVE_CONFIG.default,
       },
+      logitBias: parseLogitBiasConfig(lb),
     };
   } catch {
     // Config missing or invalid — write defaults so the user can discover it.
@@ -434,7 +505,7 @@ function loadFireworksConfig(): FireworksConfig {
     } catch {
       // Write failure is non-fatal — defaults still work in memory.
     }
-    return { serviceTier: { ...DEFAULT_SERVICE_TIER_CONFIG }, preserveThinking: { ...DEFAULT_PRESERVE_CONFIG } };
+    return { serviceTier: { ...DEFAULT_SERVICE_TIER_CONFIG }, preserveThinking: { ...DEFAULT_PRESERVE_CONFIG }, logitBias: { enabled: false, biases: {} } };
   }
 }
 
@@ -459,6 +530,33 @@ function writeRawFireworksConfig(raw: Record<string, any>): void {
 }
 
 let fireworksConfig = loadFireworksConfig();
+
+// Logit Bias state — read/refresh/mutate the logit_bias config. The in-memory
+// cache (`fireworksConfig`) is refreshed on session_start and after every
+// settings write (mutateLogitBias); before_provider_request reads it directly.
+function getLogitBias(): LogitBiasConfig {
+  return fireworksConfig.logitBias;
+}
+
+// Re-read + refresh the in-memory config from disk so the settings editor sees
+// the latest file state (handles hand-edits since session_start). Called when
+// the logit-bias submenu opens (mirrors makora's "fresh state on each open").
+function reloadLogitBias(): LogitBiasConfig {
+  fireworksConfig = loadFireworksConfig();
+  return fireworksConfig.logitBias;
+}
+
+// Read-modify-write the validated logit-bias config, then refresh the in-memory
+// cache so before_provider_request picks up the change on the next request.
+// The mutator receives a normalized LogitBiasConfig it can mutate in place.
+function mutateLogitBias(mutator: (lb: LogitBiasConfig) => void): void {
+  const raw = readRawFireworksConfig();
+  const current = parseLogitBiasConfig(raw.logitBias);
+  mutator(current);
+  raw.logitBias = current;
+  writeRawFireworksConfig(raw);
+  fireworksConfig = loadFireworksConfig();
+}
 
 // Held so module-scope helpers (setTier) can call pi.appendEntry.
 let piRef: ExtensionAPI | null = null;
@@ -587,6 +685,359 @@ function setPreserve(on: boolean): void {
   preserveOn = on;
 }
 
+// Logit Bias Editor (TUI) — custom Component for the "Logit bias" submenu.
+//
+// The makora nested-UI idiom is SettingsList → submenu → SettingsList, but
+// SettingsList only cycles fixed `values` or opens a sub-Component — it can't
+// take free text, and "add an arbitrary token ID + bias" needs free text. So
+// this editor IS the submenu Component: it owns an ordered entry list (add /
+// edit / delete mutate it in place and re-render without closing the submenu)
+// and uses pi-tui's Input for the token-ID and bias prompts. Every mutation is
+// persisted immediately via mutateLogitBias; Esc returns to the parent settings
+// list, passing back a one-line summary so the top-level row's value refreshes.
+
+type LogitBiasEntry = { tokenId: number; bias: number };
+
+type Row = { label: string; value: string; description: string; kind: "enabled" | "entry" | "add"; tokenId?: number };
+
+interface LogitBiasEditorDeps {
+  InputCtor: typeof Input;
+  matchesKey: typeof matchesKey;
+  Key: typeof Key;
+  truncateToWidth: typeof truncateToWidth;
+  visibleWidth: typeof visibleWidth;
+  wrapTextWithAnsi: typeof wrapTextWithAnsi;
+  fuzzyFilter: typeof fuzzyFilter;
+  settingsListTheme: SettingsListTheme;
+  theme: { fg(name: string, text: string): string };
+  notify: (msg: string, level: "info" | "error") => void;
+  subDone: (value?: string) => void;
+}
+
+class LogitBiasEditor {
+  private entries: LogitBiasEntry[];
+  private enabled: boolean;
+  private selectedIndex = 0;
+  private mode: "list" | "addToken" | "addBias" | "editBias" = "list";
+  private input: Input;
+  // Search `>` area at the top of the panel (matches SettingsList's search).
+  // Filters rows by label via fuzzyFilter; queries are numeric (token IDs), so
+  // `d` is reserved as a delete shortcut when the query is empty.
+  private searchInput: Input;
+  private searchQuery = "";
+  private pendingTokenId: number | null = null;
+  private editingTokenId: number | null = null;
+  private readonly maxVisible = 10;
+
+  constructor(private deps: LogitBiasEditorDeps) {
+    const lb = reloadLogitBias();
+    this.enabled = lb.enabled;
+    this.entries = LogitBiasEditor.sorted(lb.biases);
+    this.input = new deps.InputCtor();
+    this.input.onSubmit = () => this.submitInput();
+    this.input.onEscape = () => this.cancelInput();
+    this.searchInput = new deps.InputCtor();
+  }
+
+  private static sorted(biases: Record<string, number>): LogitBiasEntry[] {
+    return Object.entries(biases)
+      .map(([k, bias]) => ({ tokenId: Number.parseInt(k, 10), bias }))
+      .sort((a, b) => a.tokenId - b.tokenId);
+  }
+
+  private persist(): void {
+    const biases: Record<string, number> = {};
+    for (const e of this.entries) biases[String(e.tokenId)] = e.bias;
+    mutateLogitBias((lb) => {
+      lb.enabled = this.enabled;
+      lb.biases = biases;
+    });
+  }
+
+  private summary(): string {
+    const n = this.entries.length;
+    if (n === 0) return this.enabled ? "on · empty" : "off";
+    return `${n} ${n === 1 ? "entry" : "entries"} · ${this.enabled ? "on" : "off"}`;
+  }
+
+  // Virtual rows: [Enabled toggle] + entries + [Add token…].
+  private buildRows(): Row[] {
+    const rows: Row[] = [];
+    rows.push({
+      label: "Enabled",
+      value: this.enabled ? "on" : "off",
+      kind: "enabled",
+      description: "When on, the logit_bias map is sent on every Fireworks OpenAI-completions request, biasing the listed token IDs by their bias (-100..100). Off = nothing sent (entries are kept). Token IDs are tokenizer-specific — match the model's tokenizer.",
+    });
+    for (const e of this.entries) {
+      rows.push({
+        label: `token ${e.tokenId}`,
+        value: String(e.bias),
+        kind: "entry",
+        tokenId: e.tokenId,
+        description: `token ${e.tokenId} → ${e.bias}. Enter to edit the bias (-100..100), d to delete. Token IDs are tokenizer-specific.`,
+      });
+    }
+    rows.push({
+      label: "Add token…",
+      value: "",
+      kind: "add",
+      description: "Add a new entry: prompts for the token ID (non-negative integer), then the bias (-100..100).",
+    });
+    return rows;
+  }
+
+  // Rows visible after the search filter. With no query, returns all rows.
+  private filteredRows(): Row[] {
+    const rows = this.buildRows();
+    if (!this.searchQuery) return rows;
+    return this.deps.fuzzyFilter(rows, this.searchQuery, (r) => r.label);
+  }
+
+  private applyFilter(): void {
+    this.searchQuery = this.searchInput.getValue();
+    this.selectedIndex = 0;
+  }
+
+  private clearSearch(): void {
+    this.searchInput.setValue("");
+    this.searchQuery = "";
+  }
+
+  handleInput(data: string): void {
+    if (this.mode !== "list") {
+      this.input.handleInput(data);
+      return;
+    }
+    const { matchesKey, Key } = this.deps;
+    if (matchesKey(data, Key.up)) {
+      const n = this.filteredRows().length;
+      if (n > 0) this.selectedIndex = (this.selectedIndex - 1 + n) % n;
+    } else if (matchesKey(data, Key.down)) {
+      const n = this.filteredRows().length;
+      if (n > 0) this.selectedIndex = (this.selectedIndex + 1) % n;
+    } else if (matchesKey(data, Key.enter) || data === " ") {
+      this.activateSelected();
+    } else if (matchesKey(data, Key.escape)) {
+      this.close();
+    } else if (this.searchQuery === "" && (data === "d" || data === "D")) {
+      // `d` deletes the selected entry. Only active when not searching — with a
+      // query active, `d` is routed to the search input (token IDs are numeric,
+      // so `d` is never a useful search term, but routing avoids accidental
+      // deletes mid-search).
+      this.deleteSelected();
+    } else {
+      // Route everything else (printables, backspace, cursor arrows) to the
+      // search input, mirroring SettingsList. Spaces are dropped (sanitized)
+      // so they never enter the query.
+      const sanitized = data.replace(/ /g, "");
+      if (!sanitized) return;
+      this.searchInput.handleInput(sanitized);
+      this.applyFilter();
+    }
+  }
+
+  private activateSelected(): void {
+    const row = this.filteredRows()[this.selectedIndex];
+    if (!row) return;
+    if (row.kind === "enabled") {
+      this.toggleEnabled();
+    } else if (row.kind === "add") {
+      this.startAddToken();
+    } else if (row.kind === "entry" && row.tokenId !== undefined) {
+      const entry = this.entries.find((e) => e.tokenId === row.tokenId);
+      if (entry) this.startEditBias(entry);
+    }
+  }
+
+  private toggleEnabled(): void {
+    this.enabled = !this.enabled;
+    this.persist();
+    this.deps.notify(`Logit bias ${this.enabled ? "on" : "off"}.`, "info");
+  }
+
+  private deleteSelected(): void {
+    const row = this.filteredRows()[this.selectedIndex];
+    if (!row || row.kind !== "entry" || row.tokenId === undefined) return;
+    const idx = this.entries.findIndex((e) => e.tokenId === row.tokenId);
+    if (idx < 0) return;
+    const [removed] = this.entries.splice(idx, 1);
+    this.persist();
+    const newLen = this.filteredRows().length;
+    if (this.selectedIndex >= newLen) this.selectedIndex = Math.max(0, newLen - 1);
+    if (removed) this.deps.notify(`Removed token ${removed.tokenId}.`, "info");
+  }
+
+  private startAddToken(): void {
+    this.clearSearch();
+    this.mode = "addToken";
+    this.pendingTokenId = null;
+    this.input.setValue("");
+    this.input.focused = true;
+  }
+
+  private startEditBias(entry: LogitBiasEntry): void {
+    this.clearSearch();
+    // Re-select the entry in the (now unfiltered) full list so the cursor
+    // stays on it after returning from the bias prompt.
+    const fullIdx = this.buildRows().findIndex((r) => r.kind === "entry" && r.tokenId === entry.tokenId);
+    this.selectedIndex = fullIdx >= 0 ? fullIdx : 0;
+    this.mode = "editBias";
+    this.editingTokenId = entry.tokenId;
+    this.input.setValue(String(entry.bias));
+    this.input.focused = true;
+  }
+
+  private submitInput(): void {
+    const raw = this.input.getValue().trim();
+    if (this.mode === "addToken") {
+      const tokenId = parseTokenIdInput(raw);
+      if (tokenId === null) {
+        this.deps.notify("Token ID must be a non-negative integer.", "error");
+        return;
+      }
+      if (this.entries.some((e) => e.tokenId === tokenId)) {
+        this.deps.notify(`Token ${tokenId} already has a bias — edit it instead.`, "error");
+        return;
+      }
+      this.pendingTokenId = tokenId;
+      this.mode = "addBias";
+      this.input.setValue("0");
+      this.input.focused = true;
+      return;
+    }
+    if (this.mode === "addBias") {
+      const bias = parseBiasInput(raw);
+      if (bias === null) {
+        this.deps.notify("Bias must be an integer from -100 to 100.", "error");
+        return;
+      }
+      const tokenId = this.pendingTokenId!;
+      this.entries.push({ tokenId, bias });
+      this.entries.sort((a, b) => a.tokenId - b.tokenId);
+      this.persist();
+      const newIdx = this.entries.findIndex((e) => e.tokenId === tokenId);
+      this.selectedIndex = 1 + newIdx;
+      this.pendingTokenId = null;
+      this.mode = "list";
+      this.input.focused = false;
+      this.deps.notify(`Added token ${tokenId} → ${bias}.`, "info");
+      return;
+    }
+    if (this.mode === "editBias") {
+      const bias = parseBiasInput(raw);
+      if (bias === null) {
+        this.deps.notify("Bias must be an integer from -100 to 100.", "error");
+        return;
+      }
+      const tokenId = this.editingTokenId!;
+      const entry = this.entries.find((e) => e.tokenId === tokenId);
+      if (entry) {
+        entry.bias = bias;
+        this.persist();
+      }
+      this.editingTokenId = null;
+      this.mode = "list";
+      this.input.focused = false;
+      this.deps.notify(`Set token ${tokenId} → ${bias}.`, "info");
+      return;
+    }
+  }
+
+  private cancelInput(): void {
+    this.mode = "list";
+    this.pendingTokenId = null;
+    this.editingTokenId = null;
+    this.input.focused = false;
+  }
+
+  private close(): void {
+    this.input.focused = false;
+    this.searchInput.focused = false;
+    this.deps.subDone(this.summary());
+  }
+
+  private renderList(width: number): string[] {
+    const t = this.deps.settingsListTheme;
+    const { truncateToWidth, visibleWidth, wrapTextWithAnsi } = this.deps;
+    const lines: string[] = [];
+    // Search `>` area — mirrors SettingsList (renderMainList) so the panel stays
+    // visually consistent with the rest of /fireworks-settings.
+    lines.push(...this.searchInput.render(width));
+    lines.push("");
+
+    const rows = this.filteredRows();
+    const total = rows.length;
+    if (total === 0) {
+      lines.push(t.hint(truncateToWidth("  No matching tokens", width)));
+    } else {
+      const maxLabel = Math.min(30, Math.max(...rows.map((r) => visibleWidth(r.label)), 1));
+      const start = Math.max(0, Math.min(this.selectedIndex - Math.floor(this.maxVisible / 2), total - this.maxVisible));
+      const end = Math.min(start + this.maxVisible, total);
+      for (let i = start; i < end; i++) {
+        const row = rows[i];
+        const selected = i === this.selectedIndex;
+        const prefix = selected ? t.cursor : "  ";
+        const labelPadded = row.label + " ".repeat(Math.max(0, maxLabel - visibleWidth(row.label)));
+        const label = t.label(labelPadded, selected);
+        const sep = "  ";
+        const valueWidth = width - visibleWidth(prefix) - maxLabel - visibleWidth(sep) - 2;
+        const value = row.value ? t.value(truncateToWidth(row.value, Math.max(0, valueWidth), ""), selected) : "";
+        lines.push(truncateToWidth(prefix + label + sep + value, width));
+      }
+      if (start > 0 || end < total) {
+        lines.push(t.hint(truncateToWidth(`  (${this.selectedIndex + 1}/${total})`, width - 2, "")));
+      }
+      const sel = rows[this.selectedIndex];
+      if (sel?.description) {
+        lines.push("");
+        for (const ln of wrapTextWithAnsi(sel.description, width - 4)) {
+          lines.push(t.description(`  ${ln}`));
+        }
+      }
+    }
+
+    lines.push("");
+    lines.push(truncateToWidth(t.hint("  Type to search · ↑↓ move · Enter activate · d delete · Esc back"), width));
+    return lines;
+  }
+
+  private renderInput(width: number): string[] {
+    const { settingsListTheme: t, theme, truncateToWidth } = this.deps;
+    const lines: string[] = [];
+    let prompt = "";
+    if (this.mode === "addToken") {
+      prompt = "Token ID (non-negative integer):";
+    } else if (this.mode === "addBias") {
+      prompt = `Bias for token ${this.pendingTokenId} (-100..100):`;
+    } else if (this.mode === "editBias") {
+      prompt = `New bias for token ${this.editingTokenId} (-100..100):`;
+    }
+    lines.push(truncateToWidth(theme.fg("accent", prompt), width));
+    lines.push(...this.input.render(width));
+    lines.push("");
+    lines.push(truncateToWidth(t.hint("  Enter submit · Esc cancel"), width));
+    return lines;
+  }
+
+  render(width: number): string[] {
+    return this.mode === "list" ? this.renderList(width) : this.renderInput(width);
+  }
+
+  invalidate(): void {
+    this.input.invalidate?.();
+    this.searchInput.invalidate?.();
+  }
+}
+
+// One-line summary of the logit-bias config for the top-level settings row.
+function logitBiasSummary(): string {
+  const lb = getLogitBias();
+  const n = Object.keys(lb.biases).length;
+  if (n === 0) return lb.enabled ? "on · empty" : "off";
+  return `${n} ${n === 1 ? "entry" : "entries"} · ${lb.enabled ? "on" : "off"}`;
+}
+
 // ─── Extension Entry Point ────────────────────────────────────────────────────
 
 export {
@@ -613,6 +1064,16 @@ export {
   updateTierStatus,
   isPreserveEligible,
   setPreserve,
+  isValidBiasValue,
+  parseLogitBiasMap,
+  parseLogitBiasConfig,
+  parseBiasInput,
+  parseTokenIdInput,
+  getLogitBias,
+  reloadLogitBias,
+  mutateLogitBias,
+  logitBiasSummary,
+  LogitBiasEditor,
 };
 
 export type {
@@ -624,6 +1085,8 @@ export type {
   ServiceTierConfig,
   PreserveThinkingConfig,
   FireworksConfig,
+  LogitBiasConfig,
+  LogitBiasEntry,
 };
 
 export default function (pi: ExtensionAPI) {
@@ -728,6 +1191,20 @@ export default function (pi: ExtensionAPI) {
     // makes Fireworks honor it. See https://docs.fireworks.ai/guides/reasoning.
     if (preserveOn && isPreserveEligible(model)) {
       payload.reasoning_history = "preserved";
+      modified = true;
+    }
+
+    // Logit bias: forward the user's logit_bias map (token ID → -100..100) on
+    // Fireworks OpenAI-completions requests. The map is OpenAI-compatible and
+    // Fireworks adds each bias to the token's logit before sampling. Gated to
+    // the OpenAI-completions transport — the Anthropic Messages API has no
+    // logit_bias equivalent, so we skip models routed via `api:
+    // "anthropic-messages"` (the provider default is "openai-completions"; only
+    // a patched/custom model sets the Anthropic transport). Token IDs are
+    // tokenizer-specific — the caller must match the model's tokenizer.
+    const lb = fireworksConfig.logitBias;
+    if (lb.enabled && Object.keys(lb.biases).length > 0 && model.api !== "anthropic-messages") {
+      payload.logit_bias = lb.biases;
       modified = true;
     }
 
@@ -838,13 +1315,13 @@ export default function (pi: ExtensionAPI) {
   // settings-only (no command/keybinding), exactly like the siblings; the
   // service-tier keybinding is load-time only, so keybinding changes need /reload.
   pi.registerCommand("fireworks-settings", {
-    description: "Configure Fireworks: preserved thinking + service tier + display",
+    description: "Configure Fireworks: preserved thinking + service tier + logit bias + display",
     async handler(_args, ctx) {
       if (ctx.mode !== "tui") {
         ctx.ui.notify("/fireworks-settings requires TUI mode.", "error");
         return;
       }
-      const { SettingsList, Container } = await import("@earendil-works/pi-tui");
+      const { SettingsList, Container, Input, matchesKey, Key, truncateToWidth, visibleWidth, wrapTextWithAnsi, fuzzyFilter } = await import("@earendil-works/pi-tui");
       const { getSettingsListTheme, DynamicBorder } = await import("@earendil-works/pi-coding-agent");
 
       await ctx.ui.custom((_tui, theme, _kb, done) => {
@@ -871,6 +1348,26 @@ export default function (pi: ExtensionAPI) {
             description: "Where the \u201ctier: standard / \u26a1priority\u201d indicator is shown: footer status area or hidden",
             currentValue: fireworksConfig.serviceTier.display,
             values: ["statusbar", "off"],
+          },
+          {
+            id: "logitBias",
+            label: "Logit bias",
+            description: "Send an OpenAI-style logit_bias map (token ID → -100..100) on every Fireworks OpenAI-completions request. Open the nested panel to add / edit / delete token IDs and biases. Token IDs are tokenizer-specific — use the exact tokenizer of the model you're calling. Not sent on Anthropic-routed models.",
+            currentValue: logitBiasSummary(),
+            submenu: (_cv: string, subDone: (v?: string) => void) =>
+              new LogitBiasEditor({
+                InputCtor: Input,
+                matchesKey,
+                Key,
+                truncateToWidth,
+                visibleWidth,
+                wrapTextWithAnsi,
+                fuzzyFilter,
+                settingsListTheme: getSettingsListTheme(),
+                theme,
+                notify: (msg, level) => { try { ctx.ui.notify(msg, level); } catch { /* notify is a no-op without a UI runner */ } },
+                subDone,
+              }),
           },
         ];
 

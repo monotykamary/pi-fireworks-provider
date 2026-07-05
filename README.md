@@ -19,7 +19,8 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — via Fireworks AI's Anthropic Messages
 - **Dual API support** via Fireworks AI's Anthropic Messages and OpenAI-compatible completions endpoints (per-model routing, matching pi core's Fireworks provider)
 - **Service tiers** — toggle Fireworks `priority` vs `standard` per request on supported models (with priority pricing reflected in cost tracking), via a keybinding, `/fireworks-tier`, and a footer status area
 - **Preserved thinking** — toggle Fireworks' `reasoning_history: "preserved"` so prior assistant reasoning is retained across turns (better multi-turn recall; uses more tokens), via the `/fireworks-settings` panel, with a model-select notification. Matches neuralwatt/makora's settings-only UX, adapted to Fireworks' single global `reasoning_history` knob
-- **Settings panel** — `/fireworks-settings` (TUI) to configure preserved thinking, service tier, and display preferences; persisted to `~/.pi/agent/extensions/fireworks.json`
+- **Logit bias** — set an OpenAI-style `logit_bias` map (token ID → -100..100) via a nested `/fireworks-settings` panel (add / edit / delete arbitrary token IDs), sent on every Fireworks OpenAI-completions request; persisted to `~/.pi/agent/extensions/fireworks.json`
+- **Settings panel** — `/fireworks-settings` (TUI) to configure preserved thinking, logit bias, service tier, and display preferences; persisted to `~/.pi/agent/extensions/fireworks.json`
 - **Cost Tracking** with per-model pricing for budget management
 - **Reasoning Models** support for advanced reasoning capabilities
 - **Vision Support** for image-capable models
@@ -149,6 +150,10 @@ The selection is persisted per session (survives `/reload` and resume). When `pr
   },
   "preserveThinking": {
     "default": false
+  },
+  "logitBias": {
+    "enabled": false,
+    "biases": {}
   }
 }
 ```
@@ -157,6 +162,8 @@ The selection is persisted per session (survives `/reload` and resume). When `pr
 - `serviceTier.keybinding` — any [pi key format](https://github.com/earendil-works/pi-coding-agent/blob/main/docs/keybindings.md) (e.g. `ctrl+shift+l`, `ctrl+shift+k`). Requires `/reload` after changing. On macOS browser terminals (localterm), avoid `alt`/`ctrl+alt` (Option produces special chars) and `ctrl+shift+t/w/n/c/v` (browser/localterm tab + copy/paste shortcuts).
 - `serviceTier.display` — `statusbar` (footer status area) or `off` (hide the tier indicator).
 - `preserveThinking.default` — whether `reasoning_history: "preserved"` is injected (`true` | `false`, default `false`). Also settable via `/fireworks-settings`.
+- `logitBias.enabled` — whether the `logit_bias` map is sent on OpenAI-completions requests (`true` | `false`, default `false`). Also settable via `/fireworks-settings`.
+- `logitBias.biases` — a map of token ID (string) → bias (integer -100..100), e.g. `{"123": 5, "456": -100}`. Editable via the nested `/fireworks-settings` → *Logit bias* panel. -100 effectively bans the token; other values shift its logit additively before sampling.
 
 > **Note:** The OpenAI completions endpoint accepts `service_tier` directly (per Fireworks' API). The Anthropic Messages endpoint passes the top-level field through as an extra. If a supported Anthropic-routed model rejects it, file an issue so we can gate injection by API.
 
@@ -174,6 +181,22 @@ Unlike neuralwatt/makora (which use per-model vLLM `chat_template_kwargs` flags 
 - A dim **model-select notification** tells you the current state when you switch to a Fireworks reasoning model (`Preserved thinking ON for …` / `… OFF for …`).
 
 Preserved thinking is **off by default** to match pi core and Fireworks' default (stripped). There is intentionally no `/fireworks-preserve` command or keybinding — it's settings-panel-only, mirroring neuralwatt/makora.
+
+## Logit Bias
+
+Fireworks' OpenAI-compatible completions endpoint accepts the standard OpenAI `logit_bias` parameter: a map of token ID → bias (integer -100..100), added to the token's logit before sampling. `-100` effectively bans the token; other values shift its likelihood up or down. See [the Fireworks chat-completions API reference](https://docs.fireworks.ai/api-reference/post-chatcompletions).
+
+This extension forwards the map verbatim as the top-level `logit_bias` field on every Fireworks OpenAI-completions request when `logitBias.enabled` is `true` and the map is non-empty.
+
+**Important:** token IDs are **tokenizer-specific**. A token ID that biases one model correctly may be wrong for another (different vocabularies / tokenizers). You must compute token IDs against the exact tokenizer of the model you're calling — Fireworks uses each model's native tokenizer (Llama, Mistral, etc.). There's no per-tokenizer validation here; biasing a wrong ID silently does nothing (or worse, biases an unrelated token).
+
+**OpenAI-completions only.** `logit_bias` is injected only on the OpenAI-completions transport. Models routed via the Anthropic Messages transport (`api: "anthropic-messages"`, only set via a patch/custom model — the provider default is `openai-completions`) are skipped, since the Anthropic Messages API has no `logit_bias` equivalent.
+
+**Edit it:**
+
+- **`/fireworks-settings`** (TUI) → *Logit bias* → open the nested panel. A search `>` area at the top filters entries by token ID (type digits); `↑↓` move · `Enter` activate (toggle *Enabled* / edit a bias / start *Add token…*) · `d` delete the selected entry · `Esc` back. Add / edit use free-text entry (token ID = non-negative integer, bias = -100..100). Changes take effect immediately and persist.
+
+The top-level *Logit bias* row shows a one-line summary (e.g. `3 entries · on`, `off`). Off by default; an empty map (or `enabled: false`) means nothing is sent.
 
 ## Usage
 
