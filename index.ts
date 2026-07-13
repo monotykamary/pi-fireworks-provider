@@ -1351,7 +1351,7 @@ export default function (pi: ExtensionAPI) {
           },
           {
             id: "logitBias",
-            label: "Logit bias",
+            label: "Logit bias ›",
             description: "Send an OpenAI-style logit_bias map (token ID → -100..100) on every Fireworks OpenAI-completions request. Open the nested panel to add / edit / delete token IDs and biases. Token IDs are tokenizer-specific — use the exact tokenizer of the model you're calling. Not sent on Anthropic-routed models.",
             currentValue: logitBiasSummary(),
             submenu: (_cv: string, subDone: (v?: string) => void) =>
