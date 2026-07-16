@@ -1318,7 +1318,58 @@ export default function (pi: ExtensionAPI) {
     description: "Configure Fireworks: preserved thinking + service tier + logit bias + display",
     async handler(_args, ctx) {
       if (ctx.mode !== "tui") {
-        ctx.ui.notify("/fireworks-settings requires TUI mode.", "error");
+        // GUI/RPC fallback: a select -> select flow. The custom SettingsList and
+        // the nested LogitBiasEditor are TUI-only, so logit bias isn't offered
+        // here (configure it in a TUI session). One setting per run.
+        if (!ctx.hasUI) {
+          ctx.ui.notify("/fireworks-settings requires a UI (TUI or GUI).", "error");
+          return;
+        }
+        const guiItems = [
+          { id: "preserveThinking", label: "Preserved thinking", current: preserveOn ? "on" : "off", values: ["on", "off"] },
+          { id: "serviceTier", label: "Service tier", current: currentTier, values: ["standard", "priority"] },
+          { id: "serviceTier.display", label: "Service tier display", current: fireworksConfig.serviceTier.display, values: ["statusbar", "off"] },
+        ];
+        const pick = await ctx.ui.select(
+          "Fireworks settings — pick a setting (logit-bias editor is TUI-only)",
+          guiItems.map((i) => `${i.label}: ${i.current}`),
+        );
+        if (pick === undefined) return;
+        const item = guiItems.find((i) => pick.startsWith(`${i.label}:`));
+        if (!item) return;
+        const newValue = await ctx.ui.select(item.label, item.values);
+        if (newValue === undefined) return;
+        if (item.id === "preserveThinking") {
+          const on = newValue === "on";
+          setPreserve(on);
+          const raw = readRawFireworksConfig();
+          raw.preserveThinking = { ...(raw.preserveThinking ?? {}), default: on };
+          writeRawFireworksConfig(raw);
+          fireworksConfig = loadFireworksConfig();
+          ctx.ui.notify(`Preserved thinking ${on ? "on" : "off"} — takes effect now.`, "info");
+        } else if (item.id === "serviceTier") {
+          let model: any;
+          try { model = ctx.model; } catch { model = undefined; }
+          if (!model || model.provider !== "fireworks" || !isPriorityApplicable(model.id)) {
+            ctx.ui.notify("Service tier only applies to supported Fireworks models.", "info");
+            return;
+          }
+          const tier = newValue as ServiceTier;
+          setTier(ctx, tier);
+          const raw = readRawFireworksConfig();
+          raw.serviceTier = { ...(raw.serviceTier ?? {}), default: tier };
+          writeRawFireworksConfig(raw);
+          fireworksConfig = loadFireworksConfig();
+          ctx.ui.notify(`Fireworks service tier: ${tier}`, "info");
+        } else if (item.id === "serviceTier.display") {
+          const raw = readRawFireworksConfig();
+          raw.serviceTier = { ...(raw.serviceTier ?? {}), display: newValue };
+          writeRawFireworksConfig(raw);
+          fireworksConfig = loadFireworksConfig();
+          updateTierStatus(ctx);
+          ctx.ui.notify("Service tier display updated.", "info");
+        }
+        ctx.ui.notify("Run /fireworks-settings again for more.", "info");
         return;
       }
       const { SettingsList, Container, Input, matchesKey, Key, truncateToWidth, visibleWidth, wrapTextWithAnsi, fuzzyFilter } = await import("@earendil-works/pi-tui");
