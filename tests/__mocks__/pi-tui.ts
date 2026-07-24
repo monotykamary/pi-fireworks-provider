@@ -52,6 +52,7 @@ export class Input {
   render(_width: number): string[] { return []; }
 }
 
+export type KeyId = string;
 export const Key: Record<string, string> = {};
 export function matchesKey(_data: string, _key: any): boolean { return false; }
 export function truncateToWidth(s: string, _width: number, _ellipsis?: string): string { return s; }

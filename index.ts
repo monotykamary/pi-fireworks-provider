@@ -26,7 +26,7 @@
  */
 
 import { getAgentDir, type ExtensionAPI, type ModelRegistry } from "@earendil-works/pi-coding-agent";
-import type { Input, matchesKey, Key, truncateToWidth, visibleWidth, wrapTextWithAnsi, fuzzyFilter, SettingsListTheme } from "@earendil-works/pi-tui";
+import type { Input, matchesKey, Key, KeyId, truncateToWidth, visibleWidth, wrapTextWithAnsi, fuzzyFilter, SettingsListTheme } from "@earendil-works/pi-tui";
 import modelsData from "./models.json" with { type: "json" };
 import customModelsData from "./custom-models.json" with { type: "json" };
 import patchData from "./patch.json" with { type: "json" };
@@ -44,7 +44,7 @@ interface JsonModel {
   baseUrl?: string;
   reasoning: boolean;
   thinkingLevelMap?: Record<string, string | null>;
-  input: string[];
+  input: ("text" | "image")[];
   cost: {
     input: number;
     output: number;
@@ -64,7 +64,7 @@ interface PatchEntry {
   baseUrl?: string;
   reasoning?: boolean;
   thinkingLevelMap?: Record<string, string | null>;
-  input?: string[];
+  input?: ("text" | "image")[];
   cost?: {
     input?: number;
     output?: number;
@@ -371,7 +371,7 @@ type PreserveMode = boolean; // true = inject reasoning_history:"preserved"; fal
 
 interface ServiceTierConfig {
   default: ServiceTier;
-  keybinding: string;
+  keybinding: KeyId;
   display: "statusbar" | "off";
 }
 
@@ -425,7 +425,7 @@ function isValidTier(v: unknown): v is ServiceTier {
   return v === "standard" || v === "priority";
 }
 
-function isValidKeybinding(v: unknown): v is string {
+function isValidKeybinding(v: unknown): v is KeyId {
   return typeof v === "string" && v.length > 0;
 }
 
