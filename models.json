@@ -343,8 +343,7 @@
     "name": "Minimax M3",
     "reasoning": false,
     "input": [
-      "text",
-      "image"
+      "text"
     ],
     "cost": {
       "input": 0,
