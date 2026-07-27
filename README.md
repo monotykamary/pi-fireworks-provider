@@ -15,7 +15,7 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — via Fireworks AI's Anthropic Messages
 
 ## Features
 
-- **39+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
+- **40+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
 - **Dual API support** via Fireworks AI's Anthropic Messages and OpenAI-compatible completions endpoints (per-model routing, matching pi core's Fireworks provider)
 - **Service tiers** — toggle Fireworks `priority` vs `standard` per request on supported models (with priority pricing reflected in cost tracking), via a keybinding, `/fireworks-tier`, and a footer status area
 - **Preserved thinking** — toggle Fireworks' `reasoning_history: "preserved"` so prior assistant reasoning is retained across turns (better multi-turn recall; uses more tokens), via the `/fireworks-settings` panel, with a model-select notification. Matches neuralwatt/makora's settings-only UX, adapted to Fireworks' single global `reasoning_history` knob
@@ -100,6 +100,7 @@ pi
 | Kimi K2.6 Turbo | Text + Image | 262K | 262K | $2.00 | $8.00 |
 | Kimi K2.7 Code | Text + Image | 262K | 262K | $0.95 | $4.00 |
 | Kimi K2.7 Code Fast | Text + Image | 262K | 262K | $1.90 | $8.00 |
+| Kimi K3 | Text + Image | 1.0M | 0 | Free | Free |
 | Llama 3.3 70B Instruct | Text | 131K | 0 | Free | Free |
 | MiniMax M2.7 (router) | Text | 204K | 0 | $0.30 | $1.20 |
 | MiniMax-M2.1 | Text | 197K | 200K | $0.30 | $1.20 |
