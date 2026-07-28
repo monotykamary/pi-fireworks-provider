@@ -192,6 +192,23 @@
     "maxTokens": 0
   },
   {
+    "id": "accounts/fireworks/models/inkling",
+    "name": "Inkling",
+    "reasoning": false,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 0
+  },
+  {
     "id": "accounts/fireworks/models/kimi-k2-instruct",
     "name": "Kimi K2 Instruct",
     "reasoning": false,
