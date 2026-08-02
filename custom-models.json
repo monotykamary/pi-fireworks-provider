@@ -13,7 +13,7 @@
       "text"
     ],
     "contextWindow": 1048576,
-    "maxTokens": 0
+    "maxTokens": 384000
   },
   {
     "id": "accounts/fireworks/routers/kimi-k2p5-fast",
@@ -30,7 +30,7 @@
       "image"
     ],
     "contextWindow": 262144,
-    "maxTokens": 0
+    "maxTokens": 256000
   },
   {
     "id": "accounts/fireworks/routers/kimi-k2p6-turbo",
@@ -47,7 +47,7 @@
       "image"
     ],
     "contextWindow": 262144,
-    "maxTokens": 0
+    "maxTokens": 262000
   },
   {
     "id": "accounts/fireworks/routers/kimi-k2p6",
@@ -96,7 +96,7 @@
       "text"
     ],
     "contextWindow": 204000,
-    "maxTokens": 0
+    "maxTokens": 131072
   },
   {
     "id": "accounts/fireworks/routers/glm-5-fast",
@@ -129,7 +129,7 @@
       "image"
     ],
     "contextWindow": 262000,
-    "maxTokens": 0
+    "maxTokens": 32768
   },
   {
     "id": "accounts/fireworks/models/gemma-4-26b-a4b-it",
@@ -146,7 +146,7 @@
       "image"
     ],
     "contextWindow": 262000,
-    "maxTokens": 0
+    "maxTokens": 32768
   },
   {
     "id": "accounts/fireworks/models/qwen3p7-plus",
@@ -214,5 +214,25 @@
     ],
     "contextWindow": 262000,
     "maxTokens": 262000
+  },
+  {
+    "id": "accounts/fireworks/routers/kimi-k3-fast",
+    "name": "Kimi K3 Fast",
+    "reasoning": true,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 4.5,
+      "output": 22.5,
+      "cacheRead": 0.45,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 131072,
+    "compat": {
+      "supportsReasoningEffort": true
+    }
   }
 ]

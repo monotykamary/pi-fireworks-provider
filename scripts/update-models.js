@@ -327,6 +327,9 @@ async function main() {
     // 1. Fetch all models from Fireworks API
     const apiModels = await fetchAllFireworksModels(apiKey);
     console.log(`\nTotal models from API: ${apiModels.length}`);
+    if (apiModels.length === 0) {
+      throw new Error('Fireworks account model API returned zero models; refusing to archive the entire catalog');
+    }
 
     // 2. Load existing models.json and patch.json
     const existingModels = Array.isArray(loadJSON(MODELS_PATH)) ? loadJSON(MODELS_PATH) : [];
