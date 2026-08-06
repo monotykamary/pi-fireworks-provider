@@ -235,12 +235,19 @@
       "off": null,
       "minimal": null,
       "low": "low",
-      "medium": null,
+      "medium": "medium",
       "high": "high",
       "xhigh": null,
       "max": "max"
     },
     "compat": {
+      "supportsStore": false,
+      "supportsDeveloperRole": false,
+      "sendSessionAffinityHeaders": true,
+      "supportsLongCacheRetention": false,
+      "requiresReasoningContentOnAssistantMessages": true,
+      "thinkingFormat": "openai",
+      "deferredToolsMode": "kimi",
       "supportsReasoningEffort": true
     }
   }

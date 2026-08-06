@@ -1158,6 +1158,13 @@ export default function (pi: ExtensionAPI) {
     baseUrl: BASE_URL,
     apiKey: "$FIREWORKS_API_KEY",
     api: "openai-completions",
+    // Match pi core's bundled Fireworks catalog pins (pi-ai providers/data/fireworks.json)
+    compat: {
+      supportsStore: false,
+      supportsDeveloperRole: false,
+      sendSessionAffinityHeaders: true,
+      supportsLongCacheRetention: false,
+    },
     models: staleModels,
   });
 
@@ -1177,6 +1184,12 @@ export default function (pi: ExtensionAPI) {
             baseUrl: BASE_URL,
             apiKey: "$FIREWORKS_API_KEY",
             api: "openai-completions",
+            compat: {
+              supportsStore: false,
+              supportsDeveloperRole: false,
+              sendSessionAffinityHeaders: true,
+              supportsLongCacheRetention: false,
+            },
             models: buildModels(freshBase, customModels, patches),
           });
         }
