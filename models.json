@@ -470,6 +470,22 @@
     "maxTokens": 0
   },
   {
+    "id": "accounts/fireworks/models/qwen3p8-max",
+    "name": "Qwen3.8-2.4T-A95B",
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262144,
+    "maxTokens": 0
+  },
+  {
     "id": "accounts/fireworks/models/qwen3-vl-30b-a3b-instruct",
     "name": "Qwen3 VL 30B A3B Instruct",
     "reasoning": false,
