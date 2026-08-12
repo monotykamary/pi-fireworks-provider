@@ -15,7 +15,7 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — via Fireworks AI's Anthropic Messages
 
 ## Features
 
-- **43+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
+- **45+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
 - **Dual API support** via Fireworks AI's Anthropic Messages and OpenAI-compatible completions endpoints (per-model routing, matching pi core's Fireworks provider)
 - **Service tiers** — toggle Fireworks `priority` vs `standard` per request on supported models (with priority pricing reflected in cost tracking), via a keybinding, `/fireworks-tier`, and a footer status area
 - **Preserved thinking** — toggle Fireworks' `reasoning_history: "preserved"` so prior assistant reasoning is retained across turns (better multi-turn recall; uses more tokens), via the `/fireworks-settings` panel, with a model-select notification. Matches neuralwatt/makora's settings-only UX, adapted to Fireworks' single global `reasoning_history` knob
@@ -110,6 +110,8 @@ pi
 | MiniMax-M2.5 | Text | 197K | 197K | $0.30 | $1.20 |
 | MiniMax-M2.7 | Text | 197K | 197K | $0.30 | $1.20 |
 | MiniMax-M3 | Text + Image | 512K | 512K | $0.30 | $1.20 |
+| Muse Glimmer 30B | Text + Image | 131K | 0 | Free | Free |
+| Nemotron Lightning 3.5 30B A3B | Text | 262K | 0 | Free | Free |
 | NVIDIA Nemotron 3 Ultra NVFP4 | Text | 262K | 66K | $0.60 | $2.40 |
 | Qwen 3.7 Plus | Text + Image | 262K | 66K | $0.40 | $1.60 |
 | Qwen3 8B | Text | 41K | 41K | $0.20 | $0.20 |

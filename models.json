@@ -405,8 +405,41 @@
     "maxTokens": 0
   },
   {
+    "id": "accounts/fireworks/models/muse-glimmer-30b",
+    "name": "Muse Glimmer 30B",
+    "reasoning": false,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 131072,
+    "maxTokens": 0
+  },
+  {
     "id": "accounts/fireworks/models/nemotron-3-ultra-nvfp4",
     "name": "NVIDIA Nemotron 3 Ultra NVFP4",
+    "reasoning": false,
+    "input": [
+      "text"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262144,
+    "maxTokens": 0
+  },
+  {
+    "id": "accounts/fireworks/models/nemotron-lightning-3p5-30b-a3b",
+    "name": "Nemotron Lightning 3.5 30B A3B",
     "reasoning": false,
     "input": [
       "text"
