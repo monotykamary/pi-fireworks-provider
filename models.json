@@ -470,7 +470,7 @@
     "maxTokens": 0
   },
   {
-    "id": "accounts/fireworks/models/qwen3p8-max",
+    "id": "accounts/fireworks/models/qwen3p8-2p4t-a95b",
     "name": "Qwen3.8-2.4T-A95B",
     "reasoning": false,
     "input": [
