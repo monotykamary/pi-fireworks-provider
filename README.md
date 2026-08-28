@@ -15,7 +15,7 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — via Fireworks AI's Anthropic Messages
 
 ## Features
 
-- **48+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
+- **47+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
 - **Dual API support** via Fireworks AI's Anthropic Messages and OpenAI-compatible completions endpoints (per-model routing, matching pi core's Fireworks provider)
 - **Service tiers** — toggle Fireworks `priority` vs `standard` per request on supported models (with priority pricing reflected in cost tracking), via a keybinding, `/fireworks-tier`, and a footer status area
 - **Preserved thinking** — toggle Fireworks' `reasoning_history: "preserved"` so prior assistant reasoning is retained across turns (better multi-turn recall; uses more tokens), via the `/fireworks-settings` panel, with a model-select notification. Matches neuralwatt/makora's settings-only UX, adapted to Fireworks' single global `reasoning_history` knob
@@ -118,7 +118,6 @@ pi
 | Qwen3 8B | Text | 41K | 41K | $0.20 | $0.20 |
 | Qwen3 VL 30B A3B Instruct | Text + Image | 262K | 33K | $0.50 | $0.50 |
 | Qwen3 VL 30B A3B Thinking | Text + Image | 262K | 33K | $0.50 | $0.50 |
-| Qwen3.8-2.4T-A95B | Text | 262K | 0 | — | — |
 | Qwen3.8-2.4T-A95B | Text | 262K | 0 | — | — |
 *Costs are per million tokens. Prices subject to change - check [fireworks.ai](https://fireworks.ai) for current pricing.*
 
