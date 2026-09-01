@@ -276,3 +276,68 @@ describe("loadStaleModels (cache → embedded fallback)", () => {
     expect(loadStaleModels(embedded)).toBe(embedded);
   });
 });
+
+describe("thinkingLevelMap patches (Fireworks reasoning_effort contract)", () => {
+  it("GLM 5.3 Flash exposes low/high/max (zai: three levels, default max); medium promotes to high", () => {
+    const out = buildModels(embedded, [], patches);
+    const flash = out.find((m) => m.id === "accounts/fireworks/models/glm-5p3-flash")!;
+    expect(flash.reasoning).toBe(true);
+    expect(flash.thinkingLevelMap).toMatchObject({ low: "low", high: "high", max: "max" });
+    expect(flash.thinkingLevelMap?.medium).toBe("high");
+    expect(flash.thinkingLevelMap?.xhigh).toBeNull();
+  });
+
+  it("GLM 5.3 mirrors GLM 5.2's high/max/none level set", () => {
+    const out = buildModels(embedded, [], patches);
+    const glm = out.find((m) => m.id === "accounts/fireworks/models/glm-5p3")!;
+    expect(glm.reasoning).toBe(true);
+    expect(glm.thinkingLevelMap).toEqual({ off: "none", minimal: null, low: "high", medium: "high", high: "high", xhigh: null, max: "max" });
+  });
+
+  it("MiniMax M2.x and GPT-OSS hide levels Fireworks rejects (minimal/xhigh/max; none)", () => {
+    const out = buildModels(embedded, [], patches);
+    for (const id of ["minimax-m2p1", "minimax-m2p5", "minimax-m2p7", "minimax-m3", "gpt-oss-120b", "gpt-oss-20b"]) {
+      const m = out.find((x) => x.id === "accounts/fireworks/models/" + id)!;
+      expect(m.reasoning, id).toBe(true);
+      // Wire values stay in the provider-accepted set: low/medium/high only.
+      for (const level of ["low", "medium", "high"] as const) {
+        expect(["low", "medium", "high"]).toContain(m.thinkingLevelMap?.[level]);
+      }
+      for (const level of ["minimal", "xhigh", "max"] as const) {
+        expect(m.thinkingLevelMap?.[level]).toBeNull();
+      }
+    }
+    // MiniMax reasoning is always on; GPT-OSS errors on none — neither gets an off wire value.
+    const minimax = out.find((m) => m.id === "accounts/fireworks/models/minimax-m3")!;
+    expect(minimax.thinkingLevelMap?.off).toBeNull();
+    const oss = out.find((m) => m.id === "accounts/fireworks/models/gpt-oss-120b")!;
+    expect(oss.thinkingLevelMap?.off).toBeNull();
+  });
+
+  it("DeepSeek V4 keeps native levels and gains a real off (none) switch", () => {
+    const out = buildModels(embedded, [], patches);
+    for (const id of ["deepseek-v4-flash", "deepseek-v4-flash-0731", "deepseek-v4-pro", "deepseek-v4-pro-0813"]) {
+      const m = out.find((x) => x.id === "accounts/fireworks/models/" + id)!;
+      expect(m.reasoning, id).toBe(true);
+      expect(m.thinkingLevelMap).toMatchObject({ off: "none", minimal: null, low: "low", medium: "medium", high: "high", xhigh: "xhigh", max: "max" });
+    }
+  });
+
+  it("GLM 4.x is binary on/off: all effort levels hidden, off maps to none", () => {
+    const out = buildModels(embedded, [], patches);
+    for (const id of ["glm-4p5", "glm-4p5-air", "glm-4p7"]) {
+      const m = out.find((x) => x.id === "accounts/fireworks/models/" + id)!;
+      expect(m.thinkingLevelMap?.off, id).toBe("none");
+      for (const level of ["low", "medium", "high", "xhigh", "max"] as const) {
+        expect(m.thinkingLevelMap?.[level], id + ":" + level).toBeNull();
+      }
+    }
+  });
+
+  it("previously unpatched reasoning models now register as reasoning (pi core parity)", () => {
+    const out = buildModels(embedded, [], patches);
+    for (const id of ["deepseek-v4-pro-0813", "muse-glimmer-30b", "nemotron-lightning-3p5-30b-a3b", "qwen3p8-2p4t-a95b"]) {
+      expect(out.find((x) => x.id === "accounts/fireworks/models/" + id)?.reasoning, id).toBe(true);
+    }
+  });
+});

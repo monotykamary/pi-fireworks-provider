@@ -388,6 +388,7 @@ function stripAnchorBleedInPlace(obj: Record<string, unknown>): void {
 // reference. cacheWrite is not tiered (stays 0).
 const PRIORITY_PRICING: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
   "accounts/fireworks/models/glm-5p2":          { input: 1.75, output: 5.5,  cacheRead: 0.175, cacheWrite: 0 },
+  "accounts/fireworks/models/glm-5p3":          { input: 1.75, output: 5.5,  cacheRead: 0.325, cacheWrite: 0 },
   "accounts/fireworks/models/kimi-k2p7-code":   { input: 1.43, output: 6,   cacheRead: 0.29,  cacheWrite: 0 },
   "accounts/fireworks/models/minimax-m3":       { input: 0.45, output: 1.8,  cacheRead: 0.09,  cacheWrite: 0 },
   "accounts/fireworks/models/deepseek-v4-pro":  { input: 2.61, output: 5.22, cacheRead: 0.218, cacheWrite: 0 },
