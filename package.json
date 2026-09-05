@@ -1,6 +1,6 @@
 {
   "name": "pi-fireworks-provider",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Fireworks AI provider extension for pi - Access Kimi, MiniMax, GLM, DeepSeek, and GPT-OSS models through the Fireworks AI API",
   "type": "module",
   "main": "index.ts",
@@ -41,7 +41,8 @@
     "@types/node": "^22.20.0",
     "knip": "6.14.1",
     "typescript": "6.0.3",
-    "vitest": "4.1.7"
+    "vitest": "4.1.7",
+    "@earendil-works/pi-coding-agent": "0.85.1"
   },
   "pi": {
     "extensions": [
