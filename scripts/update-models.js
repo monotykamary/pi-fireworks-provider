@@ -443,66 +443,84 @@ function withDeprecatedForReadme(models) {
   return extras.length > 0 ? [...models, ...extras] : models;
 }
 async function main() {
-  const apiKey = resolveApiKey();
-  if (!apiKey) {
-    console.error('Error: No API key found: no `fireworks` credential resolved from ' + AUTH_JSON_PATH + ' and FIREWORKS_API_KEY is not set');
-    console.error('Usage: FIREWORKS_API_KEY=your-key node scripts/update-models.js');
-    process.exit(1);
-  }
-
-  console.log('Fetching models from Fireworks API...\n');
+  // `--offline` skips the API entirely and regenerates the README from the
+  // already-committed models.json + patch.json + custom-models.json. Useful for
+  // cost/metadata corrections when no API key is available; it never rewrites
+  // models.json or deprecated-models.json.
+  const offline = process.argv.includes('--offline');
+  let allUpstreamModels;
 
   try {
-    // 1. Fetch all models from Fireworks API
-    const apiModels = await fetchAllFireworksModels(apiKey);
-    console.log(`\nTotal models from API: ${apiModels.length}`);
-    if (apiModels.length === 0) {
-      throw new Error('Fireworks account model API returned zero models; refusing to archive the entire catalog');
+    if (offline) {
+      allUpstreamModels = Array.isArray(loadJSON(MODELS_PATH)) ? loadJSON(MODELS_PATH) : [];
+      if (allUpstreamModels.length === 0) {
+        throw new Error('--offline requires an existing models.json (nothing to render)');
+      }
+      console.log(`Offline mode: rendering README from ${allUpstreamModels.length} committed models (no API fetch)\n`);
+    } else {
+      const apiKey = resolveApiKey();
+      if (!apiKey) {
+        console.error('Error: No API key found: no `fireworks` credential resolved from ' + AUTH_JSON_PATH + ' and FIREWORKS_API_KEY is not set');
+        console.error('Usage: FIREWORKS_API_KEY=your-key node scripts/update-models.js');
+        console.error('       node scripts/update-models.js --offline   # regenerate README only, no key needed');
+        process.exit(1);
+      }
+
+      console.log('Fetching models from Fireworks API...\n');
+
+      // 1. Fetch all models from Fireworks API
+      const apiModels = await fetchAllFireworksModels(apiKey);
+      console.log(`\nTotal models from API: ${apiModels.length}`);
+      if (apiModels.length === 0) {
+        throw new Error('Fireworks account model API returned zero models; refusing to archive the entire catalog');
+      }
+
+      // 2. Load existing models.json for filtering/deprecation
+      const existingModels = Array.isArray(loadJSON(MODELS_PATH)) ? loadJSON(MODELS_PATH) : [];
+      const existingIds = new Set(existingModels.map((m) => m.id));
+
+      // 3. Filter to relevant LLMs (serverless + previously curated)
+      const relevantApiModels = apiModels.filter((m) => isRelevantModel(m, existingIds));
+      console.log(`Relevant LLM models: ${relevantApiModels.length}`);
+
+      // 4. Convert API models to models.json format (no pricing — that comes from patch.json)
+      const newModels = relevantApiModels.map((apiModel) => convertModel(apiModel));
+
+      // Live API is authoritative — models absent from API are removed
+      allUpstreamModels = [...newModels];
+
+      // 5. Save upstream models (API-derived, no pricing)
+      // Move delisted models to deprecated-models.json BEFORE models.json is overwritten
+      updateDeprecatedModels(MODELS_PATH, allUpstreamModels);
+      saveJSON(MODELS_PATH, allUpstreamModels);
     }
 
-    // 2. Load existing models.json and patch.json
-    const existingModels = Array.isArray(loadJSON(MODELS_PATH)) ? loadJSON(MODELS_PATH) : [];
+    // 6. Load patch + custom models and surface any upstream model still unpatched
     const patchData = loadJSON(PATCH_PATH);
-    const existingIds = new Set(existingModels.map((m) => m.id));
-
-    // 3. Filter to relevant LLMs (serverless + previously curated)
-    const relevantApiModels = apiModels.filter((m) => isRelevantModel(m, existingIds));
-    console.log(`Relevant LLM models: ${relevantApiModels.length}`);
-
-    // 4. Convert API models to models.json format (no pricing — that comes from patch.json)
-    const newModels = relevantApiModels.map((apiModel) => convertModel(apiModel));
-
-    // Log new models (not in patch.json)
-    for (const m of newModels) {
+    for (const m of allUpstreamModels) {
       if (!patchData[m.id]) {
         console.log(`  🆕 New model: ${m.id} (${m.name}) — add to patch.json for pricing/output limits`);
       }
     }
-
-    // Live API is authoritative — models absent from API are removed
-    const allUpstreamModels = [...newModels];
-
-    // 5. Save upstream models (API-derived, no pricing)
-    // Move delisted models to deprecated-models.json BEFORE models.json is overwritten
-    updateDeprecatedModels(MODELS_PATH, allUpstreamModels);
-    saveJSON(MODELS_PATH, allUpstreamModels);
-
-    // 6. Load and process custom models
     const customModels = Array.isArray(loadJSON(CUSTOM_MODELS_PATH)) ? loadJSON(CUSTOM_MODELS_PATH) : [];
 
-    // Find custom models that now appear in upstream (remove from custom)
-    const upstreamIds = new Set(allUpstreamModels.map((m) => m.id));
-    const duplicates = customModels.filter((m) => upstreamIds.has(m.id));
-    if (duplicates.length > 0) {
-      console.log(`\nFound ${duplicates.length} custom model(s) now available upstream:`);
-      for (const dup of duplicates) {
-        console.log(`  - ${dup.id} (${dup.name})`);
+    // Find custom models that now appear in upstream (remove from custom).
+    // Skipped offline: without a fresh API list, upstream == the committed
+    // models.json, so this would delete intentional custom duplicates.
+    if (!offline) {
+      const upstreamIds = new Set(allUpstreamModels.map((m) => m.id));
+      const duplicates = customModels.filter((m) => upstreamIds.has(m.id));
+      if (duplicates.length > 0) {
+        console.log(`\nFound ${duplicates.length} custom model(s) now available upstream:`);
+        for (const dup of duplicates) {
+          console.log(`  - ${dup.id} (${dup.name})`);
+        }
+        const cleaned = customModels.filter((m) => !upstreamIds.has(m.id));
+        saveJSON(CUSTOM_MODELS_PATH, cleaned);
+        console.log(`✓ Removed ${duplicates.length} duplicate(s) from custom-models.json`);
+        customModels.length = 0;
+        customModels.push(...cleaned);
       }
-      const cleaned = customModels.filter((m) => !upstreamIds.has(m.id));
-      saveJSON(CUSTOM_MODELS_PATH, cleaned);
-      console.log(`✓ Removed ${duplicates.length} duplicate(s) from custom-models.json`);
-      customModels.length = 0;
-      customModels.push(...cleaned);
     }
 
     // 7. Build merged models with patches applied (for README)

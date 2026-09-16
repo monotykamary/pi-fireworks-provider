@@ -384,19 +384,28 @@ function stripAnchorBleedInPlace(obj: Record<string, unknown>): void {
 // orthogonal to the "fast" router model IDs (e.g. routers/...-fast), which are
 // separate models; priority applies to the base models below.
 //
-// Per-request priority pricing (USD per million tokens) from Fireworks' tier
-// reference. cacheWrite is not tiered (stays 0).
+// Per-model priority pricing (USD per million tokens, input / cached input /
+// output) from https://docs.fireworks.ai/serverless/pricing — that table is
+// the source of truth for the Priority serving path. Entries for the undated
+// DeepSeek aliases (not listed there) keep their previously curated values.
 const PRIORITY_PRICING: Record<string, { input: number; output: number; cacheRead: number; cacheWrite: number }> = {
-  "accounts/fireworks/models/glm-5p2":          { input: 1.75, output: 5.5,  cacheRead: 0.175, cacheWrite: 0 },
-  "accounts/fireworks/models/glm-5p3":          { input: 1.75, output: 5.5,  cacheRead: 0.325, cacheWrite: 0 },
-  "accounts/fireworks/models/kimi-k2p7-code":   { input: 1.43, output: 6,   cacheRead: 0.29,  cacheWrite: 0 },
-  "accounts/fireworks/models/minimax-m3":       { input: 0.45, output: 1.8,  cacheRead: 0.09,  cacheWrite: 0 },
-  "accounts/fireworks/models/deepseek-v4-pro":  { input: 2.61, output: 5.22, cacheRead: 0.218, cacheWrite: 0 },
-  "accounts/fireworks/models/kimi-k2p6":        { input: 1.5,  output: 6,   cacheRead: 0.22,  cacheWrite: 0 },
-  "accounts/fireworks/models/minimax-m2p7":    { input: 0.45, output: 1.8,  cacheRead: 0.09,  cacheWrite: 0 },
-  "accounts/fireworks/models/glm-5p1":         { input: 2.1,  output: 6.6,  cacheRead: 0.39,  cacheWrite: 0 },
-  "accounts/fireworks/models/gpt-oss-120b":     { input: 0.18, output: 0.72, cacheRead: 0.018, cacheWrite: 0 },
-  "accounts/fireworks/models/deepseek-v4-flash":{ input: 0.21, output: 0.42, cacheRead: 0.045, cacheWrite: 0 },
+  "accounts/fireworks/models/kimi-k3":                      { input: 3.75,  output: 18.75, cacheRead: 0.375,   cacheWrite: 0 },
+  "accounts/fireworks/models/kimi-k2p7-code":               { input: 1.425, output: 6,     cacheRead: 0.285,   cacheWrite: 0 },
+  "accounts/fireworks/models/kimi-k2p6":                    { input: 1.5,   output: 6,     cacheRead: 0.22,    cacheWrite: 0 },
+  "accounts/fireworks/models/deepseek-v4p1-flash":          { input: 0.275, output: 0.825, cacheRead: 0.00875, cacheWrite: 0 },
+  "accounts/fireworks/models/deepseek-v4-flash-0731":       { input: 0.275, output: 0.825, cacheRead: 0.00875, cacheWrite: 0 },
+  "accounts/fireworks/models/deepseek-v4-flash":            { input: 0.21,  output: 0.42,  cacheRead: 0.045,   cacheWrite: 0 },
+  "accounts/fireworks/models/deepseek-v4-flash-vision-exp": { input: 0.275, output: 0.825, cacheRead: 0.00875, cacheWrite: 0 },
+  "accounts/fireworks/models/deepseek-v4-pro-0813":         { input: 1.65,  output: 4.95,  cacheRead: 0.055,   cacheWrite: 0 },
+  "accounts/fireworks/models/deepseek-v4-pro":              { input: 2.61,  output: 5.22,  cacheRead: 0.218,   cacheWrite: 0 },
+  "accounts/fireworks/models/glm-5p2":                      { input: 1.75,  output: 5.5,   cacheRead: 0.18,    cacheWrite: 0 },
+  "accounts/fireworks/models/glm-5p3":                      { input: 1.75,  output: 5.5,   cacheRead: 0.325,   cacheWrite: 0 },
+  "accounts/fireworks/models/glm-5p1":                      { input: 2.1,   output: 6.6,   cacheRead: 0.39,    cacheWrite: 0 },
+  "accounts/fireworks/models/minimax-m3":                   { input: 0.45,  output: 1.8,   cacheRead: 0.09,    cacheWrite: 0 },
+  "accounts/fireworks/models/minimax-m2p7":                 { input: 0.45,  output: 1.8,   cacheRead: 0.09,    cacheWrite: 0 },
+  "accounts/fireworks/models/qwen3p8-max":                  { input: 3,     output: 9,     cacheRead: 0.375,   cacheWrite: 0 },
+  "accounts/fireworks/models/gpt-oss-120b":                 { input: 0.18,  output: 0.72,  cacheRead: 0.018,   cacheWrite: 0 },
+  "accounts/fireworks/models/muse-glimmer-30b":             { input: 0.525, output: 2.25,  cacheRead: 0.06,    cacheWrite: 0 },
 };
 
 type ServiceTier = "standard" | "priority";
@@ -698,8 +707,11 @@ function recomputePriorityCost(message: any): any {
 //
 // Unlike neuralwatt/makora (which use per-model vLLM `chat_template_kwargs`
 // flags like preserve_thinking/clear_thinking), Fireworks' knob is a single
-// global top-level param that applies to every reasoning model. We expose it
-// as one on/off toggle. See https://docs.fireworks.ai/guides/reasoning#preserved-thinking.
+// top-level param (`reasoning_history`). It accepts three values — "disabled",
+// "interleaved", and "preserved" — but per-model support varies (Fireworks API
+// reference). We expose the strongest mode as one on/off toggle and only send
+// "preserved" where the model accepts it. See
+// https://docs.fireworks.ai/guides/reasoning#preserved-thinking.
 
 // A Fireworks model is preserve-eligible if it's a reasoning model. We read
 // `reasoning` off the registered model when available, but also accept a
@@ -707,6 +719,30 @@ function recomputePriorityCost(message: any): any {
 function isPreserveEligible(model: any): boolean {
   if (!model || model.provider !== "fireworks") return false;
   return model.reasoning === true;
+}
+
+// Models whose `reasoning_history` support does NOT include "preserved".
+// Fireworks currently documents MiniMax M2 and DeepSeek V4 as supporting only
+// "interleaved" (default) / "disabled"; Kimi K2.6/K2.7, Kimi K2 Instruct,
+// GLM 4.7/5.2, and Qwen 3.6 do support "preserved". Models outside the
+// documented table stay permissive (previous behavior) since the docs defer to
+// each provider's own documentation.
+const REASONING_HISTORY_NO_PRESERVE: ReadonlySet<string> = new Set([
+  "accounts/fireworks/models/minimax-m2p1",
+  "accounts/fireworks/models/minimax-m2p5",
+  "accounts/fireworks/models/minimax-m2p7",
+  "accounts/fireworks/models/deepseek-v4-flash",
+  "accounts/fireworks/models/deepseek-v4-flash-0731",
+  "accounts/fireworks/models/deepseek-v4-flash-vision-exp",
+  "accounts/fireworks/models/deepseek-v4-pro",
+  "accounts/fireworks/models/deepseek-v4-pro-0813",
+  "accounts/fireworks/models/deepseek-v4p1-flash",
+]);
+
+// True when the model accepts `reasoning_history: "preserved"`. Gates the
+// preserve toggle so it never injects a value Fireworks rejects.
+function supportsPreservedReasoningHistory(id: string | undefined): boolean {
+  return !!id && !REASONING_HISTORY_NO_PRESERVE.has(id);
 }
 
 // Runtime state: whether preserved thinking is active. Initialized from the
@@ -1097,6 +1133,7 @@ export {
   setTier,
   updateTierStatus,
   isPreserveEligible,
+  supportsPreservedReasoningHistory,
   setPreserve,
   isValidBiasValue,
   parseLogitBiasMap,
@@ -1142,9 +1179,17 @@ export default function (pi: ExtensionAPI) {
   function notifyPreserveOnSelect(model: any, ctx: any): void {
     if (!model || model.provider !== "fireworks") return;
     if (!isPreserveEligible(model)) return;
-    const msg = preserveOn
-      ? `Preserved thinking ON for ${model.name || model.id} — full reasoning history retained across turns (better multi-turn recall; uses more tokens). Open /fireworks-settings to change.`
-      : `Preserved thinking OFF for ${model.name || model.id} — reasoning stripped each turn (Fireworks default; lighter, weaker multi-turn recall). Open /fireworks-settings to change.`;
+    const name = model.name || model.id;
+    let msg: string;
+    if (preserveOn && !supportsPreservedReasoningHistory(model.id)) {
+      // DeepSeek V4 / MiniMax M2 only support "interleaved"; don't claim
+      // preserved is active for them when it can't be requested.
+      msg = `${name} keeps Fireworks' default reasoning history (interleaved) — preserved thinking is not supported by this model. Open /fireworks-settings to change.`;
+    } else if (preserveOn) {
+      msg = `Preserved thinking ON for ${name} — full reasoning history retained across turns (better multi-turn recall; uses more tokens). Open /fireworks-settings to change.`;
+    } else {
+      msg = `Preserved thinking OFF for ${name} — using the model's default reasoning history (interleaved for most models; lighter, weaker multi-turn recall). Open /fireworks-settings to change.`;
+    }
     if (modelSelectNotifyTimer) clearTimeout(modelSelectNotifyTimer);
     modelSelectNotifyTimer = setTimeout(() => {
       modelSelectNotifyTimer = null;
@@ -1231,12 +1276,14 @@ export default function (pi: ExtensionAPI) {
     // Preserved thinking: inject top-level `reasoning_history: "preserved"`
     // so Fireworks renders prior assistant reasoning (reasoning_content on the
     // OpenAI endpoint, thinking blocks on the Anthropic endpoint) into the
-    // model's context instead of stripping it. The only accepted value is
-    // "preserved"; omitted = stripped (Fireworks default / pi core). Applies to
-    // any Fireworks reasoning model on both transports. pi-ai already replays
-    // the reasoning field/block on prior assistant turns; this flag is what
-    // makes Fireworks honor it. See https://docs.fireworks.ai/guides/reasoning.
-    if (preserveOn && isPreserveEligible(model)) {
+    // model's context instead of stripping it. `reasoning_history` also accepts
+    // "disabled" and "interleaved"; we only ever request the strongest mode and
+    // only on models whose documented support includes it (omitted = the
+    // model/template default, e.g. interleaved for DeepSeek V4). pi-ai already
+    // replays the reasoning field/block on prior assistant turns; this flag is
+    // what makes Fireworks honor it. See
+    // https://docs.fireworks.ai/guides/reasoning#preserved-thinking.
+    if (preserveOn && isPreserveEligible(model) && supportsPreservedReasoningHistory(model.id)) {
       payload.reasoning_history = "preserved";
       modified = true;
     }
@@ -1429,7 +1476,7 @@ export default function (pi: ExtensionAPI) {
           {
             id: "preserveThinking",
             label: "Preserved thinking",
-            description: "Inject reasoning_history:\"preserved\" so Fireworks retains prior assistant reasoning across turns (better multi-turn recall; uses more tokens). Off = Fireworks default (stripped). Applies to every Fireworks reasoning model on both endpoints.",
+            description: "Inject reasoning_history:\"preserved\" so Fireworks retains prior assistant reasoning across turns (better multi-turn recall; uses more tokens). Off = the model's default reasoning history (interleaved for most models). Only sent on models whose documented support includes \"preserved\" (Kimi K2.6/K2.7, GLM 4.7/5.2, …); DeepSeek V4 and MiniMax M2 are interleaved-only.",
             currentValue: preserveOn ? "on" : "off",
             values: ["on", "off"],
           },

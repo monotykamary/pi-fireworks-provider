@@ -140,6 +140,22 @@ describe("before_provider_request: reasoning_history (preserved thinking) inject
     expect(out?.reasoning_history).toBeUndefined();
   });
 
+  it("does NOT inject reasoning_history: preserved for interleaved-only models (DeepSeek V4.1)", () => {
+    setPreserve(true);
+    const id = "accounts/fireworks/models/deepseek-v4p1-flash";
+    const ctx = stubCtx(fwModel(id));
+    const out = before({ payload: { model: id, messages: [] } }, ctx);
+    expect(out?.reasoning_history).toBeUndefined();
+  });
+
+  it("does NOT inject reasoning_history: preserved for MiniMax M2 (interleaved-only)", () => {
+    setPreserve(true);
+    const id = "accounts/fireworks/models/minimax-m2p7";
+    const ctx = stubCtx(fwModel(id));
+    const out = before({ payload: { model: id, messages: [] } }, ctx);
+    expect(out?.reasoning_history).toBeUndefined();
+  });
+
   it("priority + preserve both inject on the same request (Kimi priority model)", () => {
     setPreserve(true);
     const ctx = stubCtx(fwModel(kimiPriority));

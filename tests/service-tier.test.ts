@@ -72,9 +72,9 @@ describe("recomputePriorityCost", () => {
     })!;
     expect(out.usage.cost.input).toBeCloseTo(1.75, 6);
     expect(out.usage.cost.output).toBeCloseTo(11, 6);
-    expect(out.usage.cost.cacheRead).toBeCloseTo(0.175, 6);
+    expect(out.usage.cost.cacheRead).toBeCloseTo(0.18, 6);
     expect(out.usage.cost.cacheWrite).toBe(0);
-    expect(out.usage.cost.total).toBeCloseTo(1.75 + 11 + 0.175, 6);
+    expect(out.usage.cost.total).toBeCloseTo(1.75 + 11 + 0.18, 6);
   });
 
   it("treats missing usage fields as 0", () => {

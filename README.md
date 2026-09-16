@@ -15,10 +15,10 @@ _Kimi, MiniMax, GLM, DeepSeek, GPT-OSS — via Fireworks AI's Anthropic Messages
 
 ## Features
 
-- **51+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
+- **52+ AI Models** including Kimi K2.5, MiniMax M2.5, GLM 4.5/4.7/5, DeepSeek V3.1/V3.2, DeepSeek V4 Flash, and GPT-OSS
 - **Dual API support** via Fireworks AI's Anthropic Messages and OpenAI-compatible completions endpoints (per-model routing, matching pi core's Fireworks provider)
 - **Service tiers** — toggle Fireworks `priority` vs `standard` per request on supported models (with priority pricing reflected in cost tracking), via a keybinding, `/fireworks-tier`, and a footer status area
-- **Preserved thinking** — toggle Fireworks' `reasoning_history: "preserved"` so prior assistant reasoning is retained across turns (better multi-turn recall; uses more tokens), via the `/fireworks-settings` panel, with a model-select notification. Matches neuralwatt/makora's settings-only UX, adapted to Fireworks' single global `reasoning_history` knob
+- **Preserved thinking** — toggle Fireworks' `reasoning_history: "preserved"` so prior assistant reasoning is retained across turns (better multi-turn recall; uses more tokens), via the `/fireworks-settings` panel, with a model-select notification. Applied only on models whose documented support includes `"preserved"` (Kimi K2.6/K2.7, GLM 5.2/4.7, …); interleaved-only models like DeepSeek V4 and MiniMax M2 keep their default. Matches neuralwatt/makora's settings-only UX, adapted to Fireworks' global `reasoning_history` knob
 - **Logit bias** — set an OpenAI-style `logit_bias` map (token ID → -100..100) via a nested `/fireworks-settings` panel (add / edit / delete arbitrary token IDs), sent on every Fireworks OpenAI-completions request; persisted to `~/.pi/agent/extensions/fireworks.json`
 - **Settings panel** — `/fireworks-settings` (TUI) to configure preserved thinking, logit bias, service tier, and display preferences; persisted to `~/.pi/agent/extensions/fireworks.json`
 - **Cost Tracking** with per-model pricing for budget management
@@ -75,12 +75,12 @@ pi
 | DeepSeek V3.1 | Text | 164K | 164K | $0.56 | $1.68 |
 | DeepSeek V3.2 | Text | 164K | 160K | $0.56 | $1.68 |
 | DeepSeek V4 Flash | Text | 1.0M | 384K | $0.14 | $0.28 |
-| DeepSeek V4 Flash 0731 | Text | 1.0M | 384K | $0.14 | $0.28 |
+| DeepSeek V4 Flash 0731 | Text | 1.0M | 384K | $0.22 | $0.66 |
+| DeepSeek V4 Flash Vision Exp | Text + Image | 1.0M | 384K | $0.22 | $0.66 |
 | DeepSeek V4 Pro | Text | 1.0M | 384K | $1.74 | $3.48 |
 | DeepSeek V4 Pro (router) | Text | 1.0M | 384K | $1.74 | $3.48 |
-| DeepSeek V4 Pro 0813 | Text | 1.0M | 384K | — | — |
-| DeepSeek V4.1 Flash | Text + Image | 1.0M | 0 | — | — |
-| DeepSeek-V4-Flash-Vision-Exp | Text + Image | 1.0M | 0 | — | — |
+| DeepSeek V4 Pro 0813 | Text | 1.0M | 384K | $1.32 | $3.96 |
+| DeepSeek V4.1 Flash | Text + Image | 1.0M | 384K | $0.22 | $0.66 |
 | Gemma 4 26B A4B IT | Text + Image | 262K | 33K | — | — |
 | Gemma 4 31B IT | Text + Image | 262K | 33K | — | — |
 | GLM 4.5 | Text | 131K | 131K | $0.55 | $2.19 |
@@ -115,13 +115,14 @@ pi
 | MiniMax-M2.5 | Text | 197K | 197K | $0.30 | $1.20 |
 | MiniMax-M2.7 | Text | 197K | 197K | $0.30 | $1.20 |
 | MiniMax-M3 | Text + Image | 512K | 512K | $0.30 | $1.20 |
-| Muse Glimmer 30B | Text + Image | 131K | 131K | — | — |
-| Nemotron 3.5 Lightning 30B A3B | Text | 262K | 262K | — | — |
+| Muse Glimmer 30B | Text + Image | 131K | 131K | $0.35 | $1.50 |
+| Nemotron 3.5 Lightning 30B A3B | Text | 262K | 262K | $0.05 | $0.20 |
 | NVIDIA Nemotron 3 Ultra NVFP4 | Text | 262K | 66K | $0.60 | $2.40 |
 | Qwen 3.7 Plus | Text + Image | 262K | 66K | $0.40 | $1.60 |
 | Qwen3 8B | Text | 41K | 41K | $0.20 | $0.20 |
 | Qwen3 VL 30B A3B Instruct | Text + Image | 262K | 33K | $0.50 | $0.50 |
 | Qwen3 VL 30B A3B Thinking | Text + Image | 262K | 33K | $0.50 | $0.50 |
+| Qwen3.8 Max | Text | 262K | 131K | $2.00 | $6.00 |
 | Qwen3.8-2.4T-A95B | Text | 262K | 131K | — | — |
 *Costs are per million tokens. Prices subject to change - check [fireworks.ai](https://fireworks.ai) for current pricing.*
 

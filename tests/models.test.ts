@@ -23,9 +23,11 @@ import {
 import type { JsonModel, PatchEntry } from "../index.js";
 import patchData from "../patch.json" with { type: "json" };
 import modelsData from "../models.json" with { type: "json" };
+import customModelsData from "../custom-models.json" with { type: "json" };
 
 const patches = patchData as Record<string, PatchEntry>;
 const embedded = modelsData as JsonModel[];
+const customModels = customModelsData as JsonModel[];
 
 function baseModel(id: string, overrides: Partial<JsonModel> = {}): JsonModel {
   return {
@@ -314,29 +316,92 @@ describe("thinkingLevelMap patches (Fireworks reasoning_effort contract)", () =>
     expect(oss.thinkingLevelMap?.off).toBeNull();
   });
 
-  it("DeepSeek V4 keeps native levels and gains a real off (none) switch", () => {
+  it("DeepSeek V4 family (incl. V4.1 / Vision-Exp): native tiers, medium→high, xhigh→max, off→none", () => {
     const out = buildModels(embedded, [], patches);
-    for (const id of ["deepseek-v4-flash", "deepseek-v4-flash-0731", "deepseek-v4-pro", "deepseek-v4-pro-0813"]) {
+    for (const id of [
+      "deepseek-v4-flash",
+      "deepseek-v4-flash-0731",
+      "deepseek-v4-flash-vision-exp",
+      "deepseek-v4-pro",
+      "deepseek-v4-pro-0813",
+      "deepseek-v4p1-flash",
+    ]) {
       const m = out.find((x) => x.id === "accounts/fireworks/models/" + id)!;
       expect(m.reasoning, id).toBe(true);
-      expect(m.thinkingLevelMap).toMatchObject({ off: "none", minimal: null, low: "low", medium: "medium", high: "high", xhigh: "xhigh", max: "max" });
+      expect(m.thinkingLevelMap, id).toEqual({ off: "none", minimal: null, low: "low", medium: "medium", high: "high", xhigh: "max", max: "max" });
+      expect(m.compat?.supportsReasoningEffort, id).toBe(true);
+      expect(m.compat?.requiresReasoningContentOnAssistantMessages, id).toBe(true);
     }
   });
 
-  it("GLM 4.x is binary on/off: all effort levels hidden, off maps to none", () => {
+  it("DeepSeek V4.1 Flash / Vision-Exp are fully patched (cost, limits, image input)", () => {
     const out = buildModels(embedded, [], patches);
-    for (const id of ["glm-4p5", "glm-4p5-air", "glm-4p7"]) {
+    const v41 = out.find((m) => m.id === "accounts/fireworks/models/deepseek-v4p1-flash")!;
+    expect(v41.cost).toEqual({ input: 0.22, output: 0.66, cacheRead: 0.007, cacheWrite: 0 });
+    expect(v41.contextWindow).toBe(1048576);
+    expect(v41.maxTokens).toBe(384000);
+    expect(v41.input).toEqual(["text", "image"]);
+
+    const vision = out.find((m) => m.id === "accounts/fireworks/models/deepseek-v4-flash-vision-exp")!;
+    expect(vision.cost).toEqual({ input: 0.22, output: 0.66, cacheRead: 0.007, cacheWrite: 0 });
+    expect(vision.maxTokens).toBe(384000);
+    expect(vision.input).toEqual(["text", "image"]);
+  });
+
+  it("GLM 4.x/5.1 are binary on/off: off→none, high→high, other levels hidden", () => {
+    const out = buildModels(embedded, [], patches);
+    for (const id of ["glm-4p5", "glm-4p5-air", "glm-4p7", "glm-5p1"]) {
       const m = out.find((x) => x.id === "accounts/fireworks/models/" + id)!;
+      expect(m.reasoning, id).toBe(true);
       expect(m.thinkingLevelMap?.off, id).toBe("none");
-      for (const level of ["low", "medium", "high", "xhigh", "max"] as const) {
+      expect(m.thinkingLevelMap?.high, id).toBe("high");
+      for (const level of ["minimal", "low", "medium", "xhigh", "max"] as const) {
         expect(m.thinkingLevelMap?.[level], id + ":" + level).toBeNull();
       }
     }
   });
 
+  it("binary models expose a selectable 'on' level (pi core getSupportedThinkingLevels semantics)", () => {
+    // Mirrors pi core's clampThinkingLevel/getSupportedThinkingLevels: null =
+    // unsupported, xhigh/max need an explicit entry, everything else is on
+    // unless null. The previous off-only maps made reasoning impossible to turn
+    // on for GLM 4.x.
+    const LEVELS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"] as const;
+    const supported = (m: JsonModel) =>
+      m.reasoning
+        ? LEVELS.filter((l) => {
+            const mapped = m.thinkingLevelMap?.[l];
+            if (mapped === null) return false;
+            if (l === "xhigh" || l === "max") return mapped !== undefined;
+            return true;
+          })
+        : ["off"];
+    const out = buildModels(embedded, [], patches);
+    for (const id of ["glm-4p5", "glm-4p5-air", "glm-4p7", "glm-5p1"]) {
+      const m = out.find((x) => x.id === "accounts/fireworks/models/" + id)!;
+      expect(supported(m), id).toEqual(["off", "high"]);
+    }
+  });
+
+  it("Qwen3.8 Max is registered as a custom model with Qwen3.8 effort tiers", () => {
+    const out = buildModels(embedded, customModels, patches);
+    const max = out.find((m) => m.id === "accounts/fireworks/models/qwen3p8-max")!;
+    expect(max).toBeDefined();
+    expect(max.reasoning).toBe(true);
+    expect(max.thinkingLevelMap).toEqual({ off: "none", minimal: null, low: "low", medium: "medium", high: "high", xhigh: "xhigh", max: "max" });
+    expect(max.cost).toEqual({ input: 2, output: 6, cacheRead: 0.25, cacheWrite: 0 });
+    expect(max.maxTokens).toBe(131072);
+  });
+
+  it("every upstream model has a patch entry (no uncatalogued models)", () => {
+    for (const m of embedded) {
+      expect(patches[m.id], m.id).toBeTruthy();
+    }
+  });
+
   it("previously unpatched reasoning models now register as reasoning (pi core parity)", () => {
     const out = buildModels(embedded, [], patches);
-    for (const id of ["deepseek-v4-pro-0813", "muse-glimmer-30b", "nemotron-lightning-3p5-30b-a3b", "qwen3p8-2p4t-a95b"]) {
+    for (const id of ["deepseek-v4-pro-0813", "deepseek-v4p1-flash", "deepseek-v4-flash-vision-exp", "muse-glimmer-30b", "nemotron-lightning-3p5-30b-a3b", "qwen3p8-2p4t-a95b"]) {
       expect(out.find((x) => x.id === "accounts/fireworks/models/" + id)?.reasoning, id).toBe(true);
     }
   });
