@@ -147,7 +147,15 @@ function buildModels(base: JsonModel[], custom: JsonModel[], patch: PatchData): 
     }
   }
 
-  return Array.from(modelMap.values());
+  return Array.from(modelMap.values()).map((model) => {
+    // The catalog uses zero for unknown limits. Treat that as missing metadata,
+    // using Pi's model defaults rather than sending an unusable zero-token cap.
+    const contextWindow = Number.isFinite(model.contextWindow) && model.contextWindow > 0
+      ? model.contextWindow : 128000;
+    const maxTokens = Number.isFinite(model.maxTokens) && model.maxTokens > 0
+      ? model.maxTokens : Math.min(contextWindow, 16384);
+    return { ...model, contextWindow, maxTokens };
+  });
 }
 
 // ─── Stale-While-Revalidate Model Sync ────────────────────────────────────────

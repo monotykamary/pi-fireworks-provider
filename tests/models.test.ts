@@ -393,10 +393,29 @@ describe("thinkingLevelMap patches (Fireworks reasoning_effort contract)", () =>
     expect(max.maxTokens).toBe(131072);
   });
 
-  it("every upstream model has a patch entry (no uncatalogued models)", () => {
-    for (const m of embedded) {
-      expect(patches[m.id], m.id).toBeTruthy();
+  it("registers every upstream model with usable limits, even without a curated patch", () => {
+    const output = buildModels(embedded, customModels, patches);
+    for (const model of embedded) {
+      const registered = output.find(item => item.id === model.id)!;
+      expect(registered, model.id).toBeDefined();
+      expect(registered.contextWindow, model.id).toBeGreaterThan(0);
+      expect(registered.maxTokens, model.id).toBeGreaterThan(0);
     }
+  });
+
+  it("defaults unknown limits without replacing positive curated limits", () => {
+    const input = [
+      baseModel("unknown", { contextWindow: 0, maxTokens: 0 }),
+      baseModel("small", { contextWindow: 8192, maxTokens: 0 }),
+      baseModel("invalid", { contextWindow: NaN, maxTokens: -1 }),
+      baseModel("curated", { contextWindow: 1000000, maxTokens: 128000 }),
+    ];
+    const output = buildModels(input, [], {});
+    expect(output.find(model => model.id === "unknown")).toMatchObject({ contextWindow: 128000, maxTokens: 16384 });
+    expect(output.find(model => model.id === "small")).toMatchObject({ contextWindow: 8192, maxTokens: 8192 });
+    expect(output.find(model => model.id === "invalid")).toMatchObject({ contextWindow: 128000, maxTokens: 16384 });
+    expect(output.find(model => model.id === "curated")).toMatchObject({ contextWindow: 1000000, maxTokens: 128000 });
+    expect(input[0].maxTokens).toBe(0);
   });
 
   it("previously unpatched reasoning models now register as reasoning (pi core parity)", () => {
