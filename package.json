@@ -43,12 +43,12 @@
     "brace-expansion": "5.0.12"
   },
   "devDependencies": {
+    "@earendil-works/pi-coding-agent": "1.1.0",
+    "@earendil-works/pi-tui": "1.1.0",
     "@types/node": "^22.20.0",
     "knip": "6.14.1",
     "typescript": "6.0.3",
-    "vitest": "4.1.7",
-    "@earendil-works/pi-coding-agent": "1.1.0",
-    "@earendil-works/pi-tui": "1.1.0"
+    "vitest": "4.1.7"
   },
   "pi": {
     "extensions": [
@@ -58,5 +58,9 @@
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*",
     "@earendil-works/pi-tui": "*"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monotykamary/pi-fireworks-provider.git"
   }
 }
