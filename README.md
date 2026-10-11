@@ -29,6 +29,7 @@ Run `bun run test:pi` for offline manifest, catalog, lifecycle and streaming che
 - **Cost Tracking** with per-model pricing for budget management
 - **Reasoning Models** support for advanced reasoning capabilities
 - **Vision Support** for image-capable models
+- **Quiet live model sync** — Models refresh from the Fireworks API in the background, at most hourly and by one pi process at a time ([details](#model-sync))
 
 ## Installation
 
@@ -244,6 +245,7 @@ The Fireworks API key can be configured in multiple ways (resolved in this order
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `FIREWORKS_API_KEY` | No | Your Fireworks AI API key (fallback if not in auth.json) |
+| `PI_PROVIDER_SYNC_TTL_MS` | No | Model sync freshness window in ms (default `3600000`; `0` = revalidate every session start) |
 
 ## Configuration
 
@@ -256,6 +258,20 @@ Add to your pi configuration for automatic loading:
   ]
 }
 ```
+
+## Model sync
+
+Startup never waits on the network. pi starts with the cached catalog (`~/.pi/agent/cache/fireworks-models.json`,
+falling back to the bundled `models.json`) and revalidates against `/inference/v1/models` in the background — only when:
+
+- a Fireworks API key is configured (no key, no request),
+- the cache is older than 1 hour, missing, or was fetched with a different API key, and
+- no other pi process is already refreshing it (a `fireworks-models.lock` file next to the cache).
+
+So `/new`, `/reload`, `pi -p` and fan-out child agents share one cache instead of each calling the API; a
+session that skips the fetch still picks up a cache another process refreshed. A failed refresh is retried after
+5 minutes at the earliest. `PI_PROVIDER_SYNC_TTL_MS` changes the window (`0` revalidates on every session start).
+Only a hash fingerprint of the key is stored (`fireworks-models.sync.json`), never the key itself.
 
 ## Development
 
