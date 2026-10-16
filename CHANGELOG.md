@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.10
+
+- Pin Pi SDK development dependencies to 1.3.0 while retaining wildcard host peers; verify real manifest loading, lifecycle and native/bundled Pi hosts offline.
+
 ## 1.7.8
 
 - Pin Pi SDK development dependencies to 1.2.0 while retaining wildcard host peers; verify real manifest loading, lifecycle and native/bundled Pi hosts offline.
