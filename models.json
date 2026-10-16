@@ -522,6 +522,23 @@
     "maxTokens": 0
   },
   {
+    "id": "accounts/fireworks/models/muse-spark-open",
+    "name": "Muse Spark Open",
+    "reasoning": false,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 0
+  },
+  {
     "id": "accounts/fireworks/models/nemotron-3-ultra-nvfp4",
     "name": "NVIDIA Nemotron 3 Ultra NVFP4",
     "reasoning": false,
