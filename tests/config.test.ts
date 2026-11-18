@@ -1,7 +1,6 @@
 /**
  * Tests for the fireworks.json config layer: loadFireworksConfig (validated
- * read with defaults-populate-on-miss), readRawFireworksConfig / writeRawFireworksConfig
- * (read-modify-write that preserves unknown fields), and the tier / keybinding
+ * read with defaults-populate-on-miss), settings transactions, and the tier / keybinding
  * validators.
  *
  * Mirrors neuralwatt's config.test.ts and makora's getConfig/updateConfig tests,
@@ -15,8 +14,7 @@ import {
   isValidTier,
   isValidKeybinding,
   loadFireworksConfig,
-  readRawFireworksConfig,
-  writeRawFireworksConfig,
+  saveFireworksConfig,
 } from "../index.js";
 
 const CONFIG_PATH = path.join(process.env.PI_CODING_AGENT_DIR!, "extensions", "fireworks.json");
@@ -86,9 +84,8 @@ describe("loadFireworksConfig", () => {
   it("returns defaults when the config file is invalid JSON", () => {
     fs.mkdirSync(CONFIG_DIR, { recursive: true });
     fs.writeFileSync(CONFIG_PATH, "not json {{{");
-    // re-spy readFileSync so the populate-on-miss write sees the invalid file
-    // (loadFireworksConfig catches JSON.parse + read errors uniformly)
     expect(loadFireworksConfig()).toEqual(DEFAULT_CONFIG);
+    expect(fs.readFileSync(CONFIG_PATH, "utf8")).toBe("not json {{{");
   });
 
   it("loads a valid config file", () => {
@@ -137,36 +134,21 @@ describe("loadFireworksConfig", () => {
   });
 });
 
-describe("readRawFireworksConfig / writeRawFireworksConfig", () => {
-  it("readRawFireworksConfig returns defaults when no file exists (deep clone)", () => {
-    const raw = readRawFireworksConfig();
-    expect(raw).toEqual(DEFAULT_CONFIG);
-    // mutating the returned defaults must not bleed into the next read
-    raw.serviceTier.default = "priority";
-    expect(readRawFireworksConfig().serviceTier.default).toBe("standard");
+describe("saveFireworksConfig", () => {
+  it("merges into the latest raw snapshot without removing unknown fields", () => {
+    loadFireworksConfig();
+    const raw = { futureKey: 123, serviceTier: { default: "priority", unknown: true }, preserveThinking: { default: false } };
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify(raw));
+    saveFireworksConfig((settings) => { (settings.preserveThinking as Record<string, unknown>).default = true; });
+    expect(JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"))).toEqual({ ...raw, preserveThinking: { default: true } });
   });
 
-  it("writeRawFireworksConfig writes arbitrary JSON, readRawFireworksConfig reads it back", () => {
-    const obj = { serviceTier: { default: "priority", keybinding: "ctrl+alt+t", display: "off" }, preserveThinking: { default: true } };
-    writeRawFireworksConfig(obj);
-    expect(readRawFireworksConfig()).toEqual(obj);
-  });
-
-  it("preserves unknown fields a user added (read-modify-write)", () => {
-    const obj = { futureKey: 123, serviceTier: { default: "standard", keybinding: "ctrl+shift+l", display: "statusbar" }, preserveThinking: { default: false } };
-    writeRawFireworksConfig(obj);
-    // a settings-panel write that only touches preserveThinking.default
-    const raw = readRawFireworksConfig();
-    raw.preserveThinking = { ...(raw.preserveThinking ?? {}), default: true };
-    writeRawFireworksConfig(raw);
-    const back = readRawFireworksConfig();
-    expect(back.futureKey).toBe(123); // survived the partial write
-    expect(back.preserveThinking.default).toBe(true);
-  });
-
-  it("writeRawFireworksConfig is non-fatal on a write failure", () => {
-    vi.spyOn(fs, "writeFileSync").mockImplementation(() => { throw new Error("EACCES"); });
-    vi.spyOn(fs, "mkdirSync").mockImplementation(() => { throw new Error("EACCES"); });
-    expect(() => writeRawFireworksConfig({ foo: 1 })).not.toThrow();
+  it("does not call the mutation or replace invalid settings", () => {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    fs.writeFileSync(CONFIG_PATH, "not json {{{");
+    const mutate = vi.fn();
+    expect(() => saveFireworksConfig(mutate)).toThrow(SyntaxError);
+    expect(mutate).not.toHaveBeenCalled();
+    expect(fs.readFileSync(CONFIG_PATH, "utf8")).toBe("not json {{{");
   });
 });

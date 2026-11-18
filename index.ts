@@ -28,7 +28,7 @@
  * Then use /model to select from available models
  */
 
-import { getAgentDir, type ExtensionAPI, type ModelRegistry } from "@earendil-works/pi-coding-agent";
+import { getAgentDir, type ExtensionAPI, type ExtensionContext, type ModelRegistry } from "@earendil-works/pi-coding-agent";
 import type { Input, matchesKey, Key, KeyId, truncateToWidth, visibleWidth, wrapTextWithAnsi, fuzzyFilter, SettingsListTheme } from "@earendil-works/pi-tui";
 import modelsData from "./models.json" with { type: "json" };
 import customModelsData from "./custom-models.json" with { type: "json" };
@@ -37,6 +37,7 @@ import deprecatedData from "./deprecated-models.json" with { type: "json" };
 import fs from "fs";
 import path from "path";
 import { acquireModelSync, cacheChangedSinceLoad, markCacheLoaded, writeFileAtomic } from "./sync-policy";
+import { loadSettings, settingsObjectAt, updateSettings } from "./settings-file";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -550,53 +551,29 @@ function parseBiasInput(raw: string): number | null {
   return Number.isInteger(n) && n >= -100 && n <= 100 ? n : null;
 }
 
+function parseFireworksConfig(raw: Record<string, any>): FireworksConfig {
+  const st = raw?.serviceTier ?? {};
+  const pt = raw?.preserveThinking ?? {};
+  const lb = raw?.logitBias ?? {};
+  return {
+    serviceTier: {
+      default: isValidTier(st.default) ? st.default : DEFAULT_SERVICE_TIER_CONFIG.default,
+      keybinding: isValidKeybinding(st.keybinding) ? st.keybinding : DEFAULT_SERVICE_TIER_CONFIG.keybinding,
+      display: st.display === "off" ? "off" : "statusbar",
+    },
+    preserveThinking: {
+      default: typeof pt.default === "boolean" ? pt.default : DEFAULT_PRESERVE_CONFIG.default,
+    },
+    logitBias: parseLogitBiasConfig(lb),
+  };
+}
+
 function loadFireworksConfig(): FireworksConfig {
-  try {
-    const raw = JSON.parse(fs.readFileSync(FIREWORKS_CONFIG_PATH, "utf8"));
-    const st = raw?.serviceTier ?? {};
-    const pt = raw?.preserveThinking ?? {};
-    const lb = raw?.logitBias ?? {};
-    return {
-      serviceTier: {
-        default: isValidTier(st.default) ? st.default : DEFAULT_SERVICE_TIER_CONFIG.default,
-        keybinding: isValidKeybinding(st.keybinding) ? st.keybinding : DEFAULT_SERVICE_TIER_CONFIG.keybinding,
-        display: st.display === "off" ? "off" : "statusbar",
-      },
-      preserveThinking: {
-        default: typeof pt.default === "boolean" ? pt.default : DEFAULT_PRESERVE_CONFIG.default,
-      },
-      logitBias: parseLogitBiasConfig(lb),
-    };
-  } catch {
-    // Config missing or invalid — write defaults so the user can discover it.
-    try {
-      fs.mkdirSync(path.dirname(FIREWORKS_CONFIG_PATH), { recursive: true });
-      fs.writeFileSync(FIREWORKS_CONFIG_PATH, JSON.stringify(DEFAULT_FIREWORKS_CONFIG, null, 2) + "\n");
-    } catch {
-      // Write failure is non-fatal — defaults still work in memory.
-    }
-    return { serviceTier: { ...DEFAULT_SERVICE_TIER_CONFIG }, preserveThinking: { ...DEFAULT_PRESERVE_CONFIG }, logitBias: { enabled: false, biases: {} } };
-  }
+  return parseFireworksConfig(loadSettings(FIREWORKS_CONFIG_PATH, DEFAULT_FIREWORKS_CONFIG));
 }
 
-// Read-modify-write the raw config JSON without re-validating, so unrelated
-// fields a user added survive a settings-UI write. `loadFireworksConfig()`
-// (validated) is still called after writing to refresh the in-memory config.
-function readRawFireworksConfig(): Record<string, any> {
-  try {
-    return JSON.parse(fs.readFileSync(FIREWORKS_CONFIG_PATH, "utf8"));
-  } catch {
-    return JSON.parse(JSON.stringify(DEFAULT_FIREWORKS_CONFIG));
-  }
-}
-
-function writeRawFireworksConfig(raw: Record<string, any>): void {
-  try {
-    fs.mkdirSync(path.dirname(FIREWORKS_CONFIG_PATH), { recursive: true });
-    fs.writeFileSync(FIREWORKS_CONFIG_PATH, JSON.stringify(raw, null, 2) + "\n");
-  } catch {
-    // Write failure is non-fatal — the in-memory refresh still applies.
-  }
+function saveFireworksConfig(mutate: (raw: Record<string, unknown>) => void): void {
+  fireworksConfig = parseFireworksConfig(updateSettings(FIREWORKS_CONFIG_PATH, DEFAULT_FIREWORKS_CONFIG, mutate));
 }
 
 let fireworksConfig = loadFireworksConfig();
@@ -616,16 +593,25 @@ function reloadLogitBias(): LogitBiasConfig {
   return fireworksConfig.logitBias;
 }
 
-// Read-modify-write the validated logit-bias config, then refresh the in-memory
-// cache so before_provider_request picks up the change on the next request.
-// The mutator receives a normalized LogitBiasConfig it can mutate in place.
+// Apply only changed fields in the latest logit-bias config. Keep unknown
+// fields and untouched raw bias keys (including noncanonical spellings).
 function mutateLogitBias(mutator: (lb: LogitBiasConfig) => void): void {
-  const raw = readRawFireworksConfig();
-  const current = parseLogitBiasConfig(raw.logitBias);
-  mutator(current);
-  raw.logitBias = current;
-  writeRawFireworksConfig(raw);
-  fireworksConfig = loadFireworksConfig();
+  saveFireworksConfig((raw) => {
+    const logitBias = settingsObjectAt(raw, "logitBias");
+    const previous = parseLogitBiasConfig(logitBias);
+    const next = { ...previous, biases: { ...previous.biases } };
+    mutator(next);
+    if (next.enabled !== previous.enabled) logitBias.enabled = next.enabled;
+    const tokens = new Set([...Object.keys(previous.biases), ...Object.keys(next.biases)]);
+    for (const token of tokens) {
+      if (next.biases[token] === previous.biases[token]) continue;
+      const biases = settingsObjectAt(logitBias, "biases");
+      for (const key of Object.keys(biases)) {
+        if (/^\d+$/.test(key) && String(Number.parseInt(key, 10)) === token) delete biases[key];
+      }
+      if (next.biases[token] !== undefined) biases[token] = next.biases[token];
+    }
+  });
 }
 
 // Held so module-scope helpers (setTier) can call pi.appendEntry.
@@ -842,13 +828,17 @@ class LogitBiasEditor {
       .sort((a, b) => a.tokenId - b.tokenId);
   }
 
-  private persist(): void {
-    const biases: Record<string, number> = {};
-    for (const e of this.entries) biases[String(e.tokenId)] = e.bias;
-    mutateLogitBias((lb) => {
-      lb.enabled = this.enabled;
-      lb.biases = biases;
-    });
+  private persist(mutate: (lb: LogitBiasConfig) => void): boolean {
+    try {
+      mutateLogitBias(mutate);
+    } catch (error) {
+      this.deps.notify(`Could not save Fireworks settings: ${error instanceof Error ? error.message : String(error)}`, "error");
+      return false;
+    }
+    const current = getLogitBias();
+    this.enabled = current.enabled;
+    this.entries = LogitBiasEditor.sorted(current.biases);
+    return true;
   }
 
   private summary(): string {
@@ -948,21 +938,19 @@ class LogitBiasEditor {
   }
 
   private toggleEnabled(): void {
-    this.enabled = !this.enabled;
-    this.persist();
-    this.deps.notify(`Logit bias ${this.enabled ? "on" : "off"}.`, "info");
+    if (this.persist((lb) => { lb.enabled = !lb.enabled; })) {
+      this.deps.notify(`Logit bias ${this.enabled ? "on" : "off"}.`, "info");
+    }
   }
 
   private deleteSelected(): void {
     const row = this.filteredRows()[this.selectedIndex];
     if (!row || row.kind !== "entry" || row.tokenId === undefined) return;
-    const idx = this.entries.findIndex((e) => e.tokenId === row.tokenId);
-    if (idx < 0) return;
-    const [removed] = this.entries.splice(idx, 1);
-    this.persist();
+    const token = String(row.tokenId);
+    if (!this.persist((lb) => { delete lb.biases[token]; })) return;
     const newLen = this.filteredRows().length;
     if (this.selectedIndex >= newLen) this.selectedIndex = Math.max(0, newLen - 1);
-    if (removed) this.deps.notify(`Removed token ${removed.tokenId}.`, "info");
+    this.deps.notify(`Removed token ${token}.`, "info");
   }
 
   private startAddToken(): void {
@@ -1010,9 +998,10 @@ class LogitBiasEditor {
         return;
       }
       const tokenId = this.pendingTokenId!;
-      this.entries.push({ tokenId, bias });
-      this.entries.sort((a, b) => a.tokenId - b.tokenId);
-      this.persist();
+      if (!this.persist((lb) => {
+        if (Object.hasOwn(lb.biases, tokenId)) throw new Error(`Token ${tokenId} already has a bias — edit it instead.`);
+        lb.biases[tokenId] = bias;
+      })) return;
       const newIdx = this.entries.findIndex((e) => e.tokenId === tokenId);
       this.selectedIndex = 1 + newIdx;
       this.pendingTokenId = null;
@@ -1028,11 +1017,10 @@ class LogitBiasEditor {
         return;
       }
       const tokenId = this.editingTokenId!;
-      const entry = this.entries.find((e) => e.tokenId === tokenId);
-      if (entry) {
-        entry.bias = bias;
-        this.persist();
-      }
+      if (!this.persist((lb) => {
+        if (!Object.hasOwn(lb.biases, tokenId)) throw new Error(`Token ${tokenId} no longer has a bias.`);
+        lb.biases[tokenId] = bias;
+      })) return;
       this.editingTokenId = null;
       this.mode = "list";
       this.input.focused = false;
@@ -1151,8 +1139,7 @@ export {
   isValidTier,
   isValidKeybinding,
   loadFireworksConfig,
-  readRawFireworksConfig,
-  writeRawFireworksConfig,
+  saveFireworksConfig,
   isPriorityApplicable,
   PRIORITY_PRICING,
   recomputePriorityCost,
@@ -1439,6 +1426,38 @@ export default function (pi: ExtensionAPI) {
   // fields survive) and refresh the in-memory config. Preserved thinking is
   // settings-only (no command/keybinding), exactly like the siblings; the
   // service-tier keybinding is load-time only, so keybinding changes need /reload.
+  function applyFireworksSetting(ctx: ExtensionContext, id: string, value: string): boolean {
+    if (id === "serviceTier") {
+      let model: any;
+      try { model = ctx.model; } catch { model = undefined; }
+      if (!model || model.provider !== "fireworks" || !isPriorityApplicable(model.id)) {
+        ctx.ui.notify("Service tier only applies to supported Fireworks models.", "info");
+        return false;
+      }
+    }
+    try {
+      saveFireworksConfig((raw) => {
+        if (id === "preserveThinking") settingsObjectAt(raw, "preserveThinking").default = value === "on";
+        else if (id === "serviceTier") settingsObjectAt(raw, "serviceTier").default = value;
+        else if (id === "serviceTier.display") settingsObjectAt(raw, "serviceTier").display = value;
+      });
+    } catch (error) {
+      ctx.ui.notify(`Could not save Fireworks settings: ${error instanceof Error ? error.message : String(error)}`, "error");
+      return false;
+    }
+    if (id === "preserveThinking") {
+      const on = value === "on";
+      setPreserve(on);
+      ctx.ui.notify(`Preserved thinking ${on ? "on" : "off"} — takes effect now.`, "info");
+    } else if (id === "serviceTier") {
+      setTier(ctx, fireworksConfig.serviceTier.default);
+      ctx.ui.notify(`Fireworks service tier: ${value}`, "info");
+    } else if (id === "serviceTier.display") {
+      updateTierStatus(ctx);
+    }
+    return true;
+  }
+
   pi.registerCommand("fireworks-settings", {
     description: "Configure Fireworks: preserved thinking + service tier + logit bias + display",
     async handler(_args, ctx) {
@@ -1464,36 +1483,7 @@ export default function (pi: ExtensionAPI) {
         if (!item) return;
         const newValue = await ctx.ui.select(item.label, item.values);
         if (newValue === undefined) return;
-        if (item.id === "preserveThinking") {
-          const on = newValue === "on";
-          setPreserve(on);
-          const raw = readRawFireworksConfig();
-          raw.preserveThinking = { ...(raw.preserveThinking ?? {}), default: on };
-          writeRawFireworksConfig(raw);
-          fireworksConfig = loadFireworksConfig();
-          ctx.ui.notify(`Preserved thinking ${on ? "on" : "off"} — takes effect now.`, "info");
-        } else if (item.id === "serviceTier") {
-          let model: any;
-          try { model = ctx.model; } catch { model = undefined; }
-          if (!model || model.provider !== "fireworks" || !isPriorityApplicable(model.id)) {
-            ctx.ui.notify("Service tier only applies to supported Fireworks models.", "info");
-            return;
-          }
-          const tier = newValue as ServiceTier;
-          setTier(ctx, tier);
-          const raw = readRawFireworksConfig();
-          raw.serviceTier = { ...(raw.serviceTier ?? {}), default: tier };
-          writeRawFireworksConfig(raw);
-          fireworksConfig = loadFireworksConfig();
-          ctx.ui.notify(`Fireworks service tier: ${tier}`, "info");
-        } else if (item.id === "serviceTier.display") {
-          const raw = readRawFireworksConfig();
-          raw.serviceTier = { ...(raw.serviceTier ?? {}), display: newValue };
-          writeRawFireworksConfig(raw);
-          fireworksConfig = loadFireworksConfig();
-          updateTierStatus(ctx);
-          ctx.ui.notify("Service tier display updated.", "info");
-        }
+        if (!applyFireworksSetting(ctx, item.id, newValue)) return;
         ctx.ui.notify("Run /fireworks-settings again for more.", "info");
         return;
       }
@@ -1555,36 +1545,7 @@ export default function (pi: ExtensionAPI) {
           Math.min(items.length + 2, 15),
           getSettingsListTheme(),
           (id: string, newValue: string) => {
-            if (id === "preserveThinking") {
-              const on = newValue === "on";
-              setPreserve(on);
-              // Persist as the default too, so it survives new sessions.
-              const raw = readRawFireworksConfig();
-              raw.preserveThinking = { ...(raw.preserveThinking ?? {}), default: on };
-              writeRawFireworksConfig(raw);
-              fireworksConfig = loadFireworksConfig();
-              ctx.ui.notify(`Preserved thinking ${on ? "on" : "off"} \u2014 takes effect now.`, "info");
-            } else if (id === "serviceTier") {
-              let model: any;
-              try { model = ctx.model; } catch { model = undefined; }
-              if (!model || model.provider !== "fireworks" || !isPriorityApplicable(model.id)) {
-                ctx.ui.notify("Service tier only applies to supported Fireworks models.", "info");
-                return;
-              }
-              const tier = newValue as ServiceTier;
-              setTier(ctx, tier);
-              const raw = readRawFireworksConfig();
-              raw.serviceTier = { ...(raw.serviceTier ?? {}), default: tier };
-              writeRawFireworksConfig(raw);
-              fireworksConfig = loadFireworksConfig();
-              ctx.ui.notify(`Fireworks service tier: ${tier}`, "info");
-            } else if (id === "serviceTier.display") {
-              const raw = readRawFireworksConfig();
-              raw.serviceTier = { ...(raw.serviceTier ?? {}), display: newValue };
-              writeRawFireworksConfig(raw);
-              fireworksConfig = loadFireworksConfig();
-              updateTierStatus(ctx);
-            }
+            applyFireworksSetting(ctx, id, newValue);
           },
           () => done(undefined),
           { enableSearch: true },

@@ -352,6 +352,22 @@ function stubDeps(overrides: Record<string, any> = {}): any {
 }
 
 describe("LogitBiasEditor", () => {
+  it("merges unrelated edits made while another editor has a bias prompt open", () => {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    fs.writeFileSync(CONFIG_PATH, JSON.stringify({ logitBias: { enabled: true, biases: { "123": 5, "0456": -3 }, futureKey: "keep" } }));
+    const editor = new LogitBiasEditor(stubDeps());
+    editor.handleInput("down");
+    editor.handleInput("enter"); // token 123's edit prompt is open
+    const otherEditor = new LogitBiasEditor(stubDeps());
+    otherEditor.handleInput("enter"); // toggle enabled while the first prompt is open
+    mutateLogitBias((lb) => { lb.biases[789] = 8; });
+    editor.handleInput("0");
+    editor.handleInput("enter");
+    expect(JSON.parse(fs.readFileSync(CONFIG_PATH, "utf8"))).toEqual({
+      logitBias: { enabled: false, biases: { "123": 50, "0456": -3, "789": 8 }, futureKey: "keep" },
+    });
+  });
+
   it("renders the search `>` area at the top of the panel", () => {
     mutateLogitBias((lb) => { lb.enabled = true; lb.biases = { "123": 5 }; });
     const ed = new LogitBiasEditor(stubDeps());
