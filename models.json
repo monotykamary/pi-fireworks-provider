@@ -325,6 +325,23 @@
     "maxTokens": 0
   },
   {
+    "id": "accounts/fireworks/models/hy4-flash",
+    "name": "Hy4 Flash",
+    "reasoning": false,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 524288,
+    "maxTokens": 0
+  },
+  {
     "id": "accounts/fireworks/models/inkling",
     "name": "Inkling",
     "reasoning": false,
@@ -346,7 +363,8 @@
     "name": "Inkling 2 Small",
     "reasoning": false,
     "input": [
-      "text"
+      "text",
+      "image"
     ],
     "cost": {
       "input": 0,
@@ -689,6 +707,23 @@
   {
     "id": "accounts/fireworks/models/qwen3-vl-30b-a3b-thinking",
     "name": "Qwen3 VL 30B A3B Thinking",
+    "reasoning": false,
+    "input": [
+      "text",
+      "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 262144,
+    "maxTokens": 0
+  },
+  {
+    "id": "accounts/fireworks/models/qwen4-max",
+    "name": "Qwen4 Max",
     "reasoning": false,
     "input": [
       "text",
