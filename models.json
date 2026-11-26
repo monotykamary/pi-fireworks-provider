@@ -326,7 +326,7 @@
   },
   {
     "id": "accounts/fireworks/models/hy4-flash",
-    "name": "Hy4 Flash",
+    "name": "Hy4 flash",
     "reasoning": false,
     "input": [
       "text",
@@ -348,6 +348,22 @@
     "input": [
       "text",
       "image"
+    ],
+    "cost": {
+      "input": 0,
+      "output": 0,
+      "cacheRead": 0,
+      "cacheWrite": 0
+    },
+    "contextWindow": 1048576,
+    "maxTokens": 0
+  },
+  {
+    "id": "accounts/fireworks/models/inkling-2-mini",
+    "name": "Inkling 2 Mini",
+    "reasoning": false,
+    "input": [
+      "text"
     ],
     "cost": {
       "input": 0,
