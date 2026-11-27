@@ -363,7 +363,8 @@
     "name": "Inkling 2 Mini",
     "reasoning": false,
     "input": [
-      "text"
+      "text",
+      "image"
     ],
     "cost": {
       "input": 0,

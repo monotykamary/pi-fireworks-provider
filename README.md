@@ -106,7 +106,7 @@ pi
 | GPT OSS 20B | Text | 131K | 33K | $0.07 | $0.30 |
 | Hy4 flash | Text + Image | 524K | 0 | — | — |
 | Inkling | Text + Image | 1.0M | 262K | $1.00 | $4.05 |
-| Inkling 2 Mini | Text | 1.0M | 0 | — | — |
+| Inkling 2 Mini | Text + Image | 1.0M | 0 | — | — |
 | Inkling 2 Small | Text + Image | 1.0M | 0 | — | — |
 | Kimi K2 Instruct | Text | 131K | 16K | $1.00 | $3.00 |
 | Kimi K2 Thinking | Text | 262K | 256K | $0.60 | $2.50 |
